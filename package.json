@@ -1,0 +1,26 @@
+{
+  "name": "civic360-ai",
+  "version": "1.0.0",
+  "description": "Civic360 AI - AI-Powered Civic Issue Reporting and Resolution Platform for India",
+  "scripts": {
+    "server": "npm run start --prefix server",
+    "server:dev": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "seed": "npm run seed --prefix server",
+    "build": "npm run build --prefix client"
+  },
+  "keywords": [
+    "civic-tech",
+    "ai",
+    "smart-city",
+    "india",
+    "complaint-management",
+    "leaflet",
+    "react",
+    "nodejs",
+    "express",
+    "mongodb"
+  ],
+  "author": "Civic360 AI Team",
+  "license": "MIT"
+}
