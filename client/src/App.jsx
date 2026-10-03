@@ -59,7 +59,7 @@ function App() {
         <Route
           path="dashboard"
           element={
-            <ProtectedRoute allowedRoles={['citizen', 'officer', 'admin']}>
+            <ProtectedRoute allowedRoles={['citizen']}>
               <CitizenDashboard />
             </ProtectedRoute>
           }
@@ -67,7 +67,7 @@ function App() {
         <Route
           path="my-complaints"
           element={
-            <ProtectedRoute allowedRoles={['citizen', 'officer', 'admin']}>
+            <ProtectedRoute allowedRoles={['citizen']}>
               <MyComplaintsPage />
             </ProtectedRoute>
           }
@@ -77,7 +77,7 @@ function App() {
         <Route
           path="officer"
           element={
-            <ProtectedRoute allowedRoles={['officer', 'admin']}>
+            <ProtectedRoute allowedRoles={['officer']}>
               <OfficerDashboard />
             </ProtectedRoute>
           }

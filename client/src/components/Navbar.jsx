@@ -155,13 +155,13 @@ const Navbar = () => {
             )}
 
             {/* Report New Issue CTA */}
-            <Link
+            {(!isAuthenticated || user?.role === 'citizen') && <Link
               to="/report"
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs md:text-sm transition-all shadow-sm shadow-blue-500/20 hover:shadow"
             >
               <PlusCircle className="w-4 h-4" />
               <span>Report Issue</span>
-            </Link>
+            </Link>}
 
             {isAuthenticated ? (
               <div className="flex items-center gap-2">

@@ -204,7 +204,11 @@ export const createComplaint = async (req, res) => {
       department: determinedDepartment, routingExplanation: assignment.explanation,
       ...sla, escalationLevel: 0, escalationHistory: [],
       aiMetadata: { confidenceScore: aiAnalysis.confidenceScore, detectedKeywords: aiAnalysis.detectedKeywords || [], duplicateDetected: Boolean(aiAnalysis.duplicateDetected && confirmDifferentIssue), duplicateOf: aiAnalysis.duplicateDetected && confirmDifferentIssue ? aiAnalysis.duplicateComplaint?._id : null, suggestedPriority: aiAnalysis.suggestedPriority, suggestedDepartment: determinedDepartment, autoRouted: Boolean(assignedOfficerId) },
-      timeline: [{ status: 'Pending', note: `Complaint registered. Configured ${determinedPriority} priority SLA deadline: ${sla.slaDeadline.toISOString()}.`, updatedBy: req.user._id }, ...(assignedOfficerId ? [{ status: 'Assigned', note: `${assignment.explanation} Assigned to ${assignment.officer.name} (${determinedDepartment}).`, updatedBy: req.user._id }] : [])],
+      timeline: [
+        { status: 'Pending', note: `Complaint submitted. Configured ${determinedPriority} priority SLA deadline: ${sla.slaDeadline.toISOString()}.`, updatedBy: req.user._id },
+        { status: 'Analyzed', note: `Rule-based category, priority, and department analysis completed for ${determinedCategory}.`, updatedBy: req.user._id },
+        ...(assignedOfficerId ? [{ status: 'Assigned', note: `${assignment.explanation} Assigned to ${assignment.officer.name} (${determinedDepartment}).`, updatedBy: req.user._id }] : []),
+      ],
     });
     await Notification.create({ user: req.user._id, title: 'Complaint Registered', message: `Your complaint "${complaint.title}" has been registered (ID: #${complaint._id.toString().slice(-6).toUpperCase()}).`, complaintId: complaint._id, type: 'new_complaint' });
     if (assignedOfficerId) await Notification.create({ user: assignedOfficerId, title: 'New Complaint Assigned', message: `New ${complaint.priority} priority complaint in ${complaint.ward}: "${complaint.title}".`, complaintId: complaint._id, type: 'assignment' });

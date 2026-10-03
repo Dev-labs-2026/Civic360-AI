@@ -9,7 +9,7 @@ import EmptyState from '../components/EmptyState';
 import StatusBadge from '../components/StatusBadge';
 import PriorityBadge from '../components/PriorityBadge';
 import { formatDate } from '../utils/formatters';
-import { ISSUE_CATEGORIES, COMPLAINT_STATUSES, PRIORITIES } from '../utils/constants';
+import { ISSUE_CATEGORIES, COMPLAINT_STATUSES, PRIORITIES, WARDS } from '../utils/constants';
 import {
   Briefcase,
   AlertOctagon,
@@ -39,22 +39,32 @@ const OfficerDashboard = () => {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
   const [slaStatusFilter, setSlaStatusFilter] = useState('');
+  const [wardFilter, setWardFilter] = useState('');
+  const [dashboardError, setDashboardError] = useState('');
+  const [complaintError, setComplaintError] = useState('');
 
-  const loadData = async () => {
+  const loadDashboard = async () => {
     try {
-      setLoading(true);
-      // Fetch stats
       const dashRes = await complaintService.getOfficerDashboard();
       if (dashRes.success) {
         setDashboardData(dashRes.data);
+        setDashboardError('');
       }
+    } catch (err) {
+      console.error('Failed to load officer dashboard:', err);
+      setDashboardError('Unable to load dashboard data. Try again.');
+    }
+  };
 
-      // Fetch complaints based on scope
+  const loadComplaints = async () => {
+    try {
+      setLoading(true);
       const params = {
         status: statusFilter,
         category: categoryFilter,
         priority: priorityFilter,
         slaStatus: slaStatusFilter,
+        ward: wardFilter,
       };
 
       if (scope === 'assigned') {
@@ -66,17 +76,21 @@ const OfficerDashboard = () => {
       const compRes = await complaintService.getComplaints(params);
       if (compRes.success && compRes.complaints) {
         setComplaints(compRes.complaints);
+        setComplaintError('');
       }
     } catch (err) {
       console.error('Failed to load officer dashboard data:', err);
+      setComplaintError('Unable to load complaints. Try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => { loadDashboard(); }, []);
   useEffect(() => {
-    loadData();
-  }, [scope, statusFilter, categoryFilter, priorityFilter, slaStatusFilter]);
+    loadComplaints();
+  }, [scope, statusFilter, categoryFilter, priorityFilter, slaStatusFilter, wardFilter]);
+  const retry = () => { loadDashboard(); loadComplaints(); };
 
   const pStats = dashboardData?.personal || {
     total: 0,
@@ -84,6 +98,8 @@ const OfficerDashboard = () => {
     pending: 0,
     inProgress: 0,
     resolved: 0,
+    overdue: 0,
+    escalated: 0,
     critical: 0,
   };
 
@@ -143,7 +159,7 @@ const OfficerDashboard = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
         <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Assigned</p>
@@ -153,6 +169,15 @@ const OfficerDashboard = () => {
           <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
             <Briefcase className="w-6 h-6" />
           </div>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-white border border-rose-200 shadow-xs flex items-center justify-between">
+          <div><p className="text-xs font-bold uppercase tracking-wider text-rose-700">Overdue</p><h3 className="text-2xl font-black text-slate-900 mt-1">{pStats.overdue}</h3><p className="text-[11px] text-slate-500 mt-0.5">Past deadline</p></div>
+          <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center"><AlertOctagon className="w-5 h-5" /></div>
+        </div>
+        <div className="p-5 rounded-2xl bg-white border border-purple-200 shadow-xs flex items-center justify-between">
+          <div><p className="text-xs font-bold uppercase tracking-wider text-purple-700">Escalated</p><h3 className="text-2xl font-black text-slate-900 mt-1">{pStats.escalated}</h3><p className="text-[11px] text-slate-500 mt-0.5">Needs review</p></div>
+          <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center"><ShieldCheck className="w-5 h-5" /></div>
         </div>
 
         <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-between">
@@ -225,18 +250,23 @@ const OfficerDashboard = () => {
             ))}
           </select>
 
+          <select value={wardFilter} onChange={(e) => setWardFilter(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white" aria-label="Filter by ward">
+            <option value="">All Wards</option>{WARDS.map((ward) => <option key={ward} value={ward}>{ward}</option>)}
+          </select>
+
           <select value={slaStatusFilter} onChange={(e) => setSlaStatusFilter(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white">
             <option value="">All SLA states</option>
             {['On Track', 'Due Soon', 'Overdue', 'Escalated', 'Resolved'].map((state) => <option key={state} value={state}>{state}</option>)}
           </select>
 
-          {(statusFilter || categoryFilter || priorityFilter || slaStatusFilter) && (
+          {(statusFilter || categoryFilter || priorityFilter || slaStatusFilter || wardFilter) && (
             <button
               onClick={() => {
                 setStatusFilter('');
                 setCategoryFilter('');
                 setPriorityFilter('');
                 setSlaStatusFilter('');
+                setWardFilter('');
               }}
               className="px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200"
             >
@@ -275,6 +305,7 @@ const OfficerDashboard = () => {
       </div>
 
       {/* Main Content Area: List or Map */}
+      {(dashboardError || complaintError) && <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 flex flex-wrap items-center justify-between gap-3"><span>{[dashboardError, complaintError].filter(Boolean).join(' ')}</span><button onClick={retry} className="rounded-lg bg-rose-700 px-4 py-2 text-white font-semibold">Retry</button></div>}
       {loading ? (
         <LoadingSpinner message="Loading complaints..." />
       ) : complaints.length === 0 ? (

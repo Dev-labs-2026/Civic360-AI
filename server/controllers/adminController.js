@@ -127,6 +127,18 @@ export const getAdminDashboard = async (req, res) => {
       { $group: { _id: '$priority', count: { $sum: 1 } } },
     ]);
 
+    const trendStart = new Date();
+    trendStart.setMonth(trendStart.getMonth() - 5, 1);
+    trendStart.setHours(0, 0, 0, 0);
+    const resolutionTrend = await Complaint.aggregate([
+      { $match: { status: 'Resolved' } },
+      { $project: { resolvedEvents: { $filter: { input: { $ifNull: ['$timeline', []] }, as: 'event', cond: { $eq: ['$$event.status', 'Resolved'] } } } } },
+      { $addFields: { resolvedAt: { $max: { $map: { input: '$resolvedEvents', as: 'event', in: '$$event.timestamp' } } } } },
+      { $match: { resolvedAt: { $gte: trendStart } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$resolvedAt' } }, count: { $sum: 1 } } },
+      { $sort: { _id: 1 } },
+    ]);
+
     // Recent 10 critical / urgent complaints
     const urgentComplaints = await Complaint.find({
       priority: { $in: ['Critical', 'High'] },
@@ -158,6 +170,7 @@ export const getAdminDashboard = async (req, res) => {
         departmentStats,
         wardStats,
         priorityStats,
+        resolutionTrend,
         urgentComplaints,
         duplicateByWard,
         duplicateComplaints,

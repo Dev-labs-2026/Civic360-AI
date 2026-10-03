@@ -80,7 +80,7 @@ export const classifyComplaint = (text = '') => {
     }
   }
 
-  // Calculate simulated AI confidence
+  // Preserve the legacy confidenceScore field with a deterministic rule score.
   const confidence = highestScore > 0 
     ? Math.min(0.98, 0.65 + (highestScore * 0.08)) 
     : 0.50;

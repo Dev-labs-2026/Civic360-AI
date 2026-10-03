@@ -2,10 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import StatusBadge from './StatusBadge';
 import PriorityBadge from './PriorityBadge';
-import { formatRelativeTime } from '../utils/formatters';
+import SlaBadge from './SlaBadge';
+import { formatDate, formatRelativeTime } from '../utils/formatters';
 import { getImageUrl } from '../services/api';
 import { 
-  MapPin, 
+  MapPin,
   Building2, 
   Calendar, 
   Sparkles, 
@@ -42,9 +43,10 @@ const ComplaintCard = ({ complaint }) => {
   if (!complaint) return null;
 
   const shortId = complaint._id?.toString().slice(-6).toUpperCase() || 'NEW';
+  const lastUpdate = complaint.updatedAt || complaint.createdAt;
 
   return (
-    <div className="group bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col justify-between">
+    <div className={`group bg-white rounded-2xl border ${['Overdue', 'Escalated'].includes(complaint.slaStatus) ? 'border-rose-300 ring-1 ring-rose-100' : 'border-slate-200/80'} shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col justify-between`}>
       <div>
         {/* Image preview banner if exists */}
         {complaint.image && (
@@ -83,10 +85,10 @@ const ComplaintCard = ({ complaint }) => {
 
           {/* ID and Relative Time */}
           <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
-            <span className="font-mono font-medium text-slate-500">#{shortId}</span>
+            <span className="font-mono font-medium text-slate-500">CIV-{shortId}</span>
             <span className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5" />
-              {formatRelativeTime(complaint.createdAt)}
+              {formatDate(complaint.createdAt)}
             </span>
           </div>
 
@@ -100,9 +102,9 @@ const ComplaintCard = ({ complaint }) => {
             {complaint.description}
           </p>
           {complaint.slaStatus && (
-            <div className="text-[11px] mb-3 flex items-center justify-between gap-2">
-              <span className={`font-bold ${['Overdue', 'Escalated'].includes(complaint.slaStatus) ? 'text-rose-700' : 'text-indigo-700'}`}>SLA: {complaint.slaStatus}</span>
-              {complaint.slaDeadline && <span className="text-slate-500">Due {new Date(complaint.slaDeadline).toLocaleString()}</span>}
+            <div className="text-[11px] mb-3 flex flex-wrap items-center justify-between gap-2">
+              <SlaBadge status={complaint.slaStatus} />
+              {complaint.slaDeadline && complaint.slaStatus !== 'Resolved' && <span className="text-slate-500">Due {new Date(complaint.slaDeadline).toLocaleString()}</span>}
             </div>
           )}
 
@@ -116,21 +118,22 @@ const ComplaintCard = ({ complaint }) => {
               <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               <span className="font-medium text-slate-700">{complaint.department || 'General Municipal'}</span>
             </div>
+            {complaint.ward && <div className="text-[11px] text-slate-500">Ward: <span className="font-medium text-slate-700">{complaint.ward}</span></div>}
+            {complaint.assignedOfficer?.name && <div className="text-[11px] text-slate-500">Assigned to: <span className="font-medium text-slate-700">{complaint.assignedOfficer.name}</span></div>}
+            <div className="text-[11px] text-slate-500">Last update: <span className="font-medium text-slate-700">{formatRelativeTime(lastUpdate)}</span></div>
           </div>
         </div>
       </div>
 
       {/* Card Footer */}
-      <div className="px-5 pb-5 pt-0 flex items-center justify-between border-t border-slate-100 mt-2 pt-3">
+      <div className="px-5 pb-5 pt-3 border-t border-slate-100 mt-2 space-y-3">
         <StatusBadge status={complaint.status} size="sm" />
-
-        <Link
-          to={`/complaints/${complaint._id}`}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors group/btn"
-        >
-          <span>View Details</span>
-          <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
-        </Link>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold text-blue-700">
+          <Link to={`/complaints/${complaint._id}`} className="inline-flex items-center gap-1 hover:text-blue-900">View details <ArrowRight className="w-3.5 h-3.5" /></Link>
+          <Link to={`/complaints/${complaint._id}`} className="hover:text-blue-900">Track complaint</Link>
+          <Link to={`/complaints/${complaint._id}#timeline`} className="hover:text-blue-900">View timeline</Link>
+          {(complaint.afterImage || complaint.resolutionNote) && <Link to={`/complaints/${complaint._id}#resolution-evidence`} className="hover:text-blue-900">View resolution evidence</Link>}
+        </div>
       </div>
     </div>
   );

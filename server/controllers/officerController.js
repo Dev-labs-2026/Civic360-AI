@@ -1,5 +1,6 @@
 import Complaint from '../models/Complaint.js';
 import { departmentQueryValues } from '../utils/departments.js';
+import { ACTIVE_SLA_STATUSES } from '../config/slaConfig.js';
 
 /**
  * @desc    Get Officer Dashboard analytics
@@ -15,9 +16,13 @@ export const getOfficerDashboard = async (req, res) => {
     // Personal assigned complaints
     const assignedTotal = await Complaint.countDocuments({ assignedOfficer: officerId });
     const workload = await Complaint.countDocuments({ assignedOfficer: officerId, status: { $in: ['Pending', 'Assigned', 'In Progress'] } });
-    const assignedPending = await Complaint.countDocuments({ assignedOfficer: officerId, status: 'Assigned' });
+    const assignedPending = await Complaint.countDocuments({ assignedOfficer: officerId, status: 'Pending' });
     const assignedInProgress = await Complaint.countDocuments({ assignedOfficer: officerId, status: 'In Progress' });
     const assignedResolved = await Complaint.countDocuments({ assignedOfficer: officerId, status: 'Resolved' });
+    const [assignedOverdue, assignedEscalated] = await Promise.all([
+      Complaint.countDocuments({ assignedOfficer: officerId, status: { $in: ACTIVE_SLA_STATUSES }, slaDeadline: { $lte: new Date() }, $or: [{ escalationLevel: { $lt: 1 } }, { escalationLevel: { $exists: false } }] }),
+      Complaint.countDocuments({ assignedOfficer: officerId, status: { $in: ACTIVE_SLA_STATUSES }, escalationLevel: { $gt: 0 } }),
+    ]);
 
     // Departmental complaints
     const deptTotal = await Complaint.countDocuments(departmentFilter);
@@ -57,6 +62,8 @@ export const getOfficerDashboard = async (req, res) => {
           pending: assignedPending,
           inProgress: assignedInProgress,
           resolved: assignedResolved,
+          overdue: assignedOverdue,
+          escalated: assignedEscalated,
           critical: criticalCount,
           high: highCount,
         },

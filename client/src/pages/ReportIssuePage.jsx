@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import complaintService from '../services/complaintService';
 import MapPicker from '../components/MapPicker';
@@ -36,7 +36,7 @@ const ReportIssuePage = () => {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
 
-  // AI Assistant State
+  // Rule-based analysis state
   const [aiAnalyzing, setAiAnalyzing] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState(null);
   const [duplicateWarning, setDuplicateWarning] = useState(null);
@@ -68,7 +68,7 @@ const ReportIssuePage = () => {
     }
   };
 
-  // Trigger real-time AI Assistant draft analysis
+  // Trigger real-time rule-based draft analysis
   const triggerAiAnalysis = async (t = title, d = description, c = category, lat = latitude, lng = longitude) => {
     if (!t && !d) return;
 
@@ -186,6 +186,8 @@ const ReportIssuePage = () => {
       setSubmitting(false);
     }
   };
+
+  if (isAuthenticated && user?.role !== 'citizen') return <Navigate to={user?.role === 'admin' ? '/admin' : '/officer'} replace />;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -316,7 +318,7 @@ const ReportIssuePage = () => {
               />
             </div>
 
-            {/* Description & AI Assistant preview */}
+            {/* Description & rule-based analysis preview */}
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
@@ -338,7 +340,7 @@ const ReportIssuePage = () => {
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 leading-relaxed"
               />
 
-              {/* AI Assistant Tags Bar */}
+              {/* Rule-based analysis suggestions */}
               {aiSuggestions && (
                 <div className="mt-3 p-3 bg-blue-50/70 border border-blue-100 rounded-xl text-xs space-y-2">
                   <div className="flex items-center gap-1.5 font-bold text-blue-900">

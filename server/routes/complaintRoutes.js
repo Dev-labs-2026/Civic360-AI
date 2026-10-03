@@ -12,7 +12,7 @@ import { publicAnalysisRateLimit, rateLimit } from '../middleware/rateLimit.js';
 
 const router = express.Router();
 
-// Real-time AI Assistant draft analysis
+// Real-time rule-based complaint analysis
 router.post('/analyze', publicAnalysisRateLimit, analyzeComplaintDraft);
 
 // Complaint CRUD routes

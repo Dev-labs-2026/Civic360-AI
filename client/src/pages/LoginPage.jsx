@@ -70,7 +70,7 @@ const LoginPage = () => {
             </div>
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-blue-800">Civic360 AI</p>
             <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl lg:text-5xl">
-              AI-Powered Civic Issue Resolution Platform for West Bengal
+              Rule-Based Civic Issue Routing Platform for West Bengal
             </h1>
             <p className="mt-5 max-w-lg text-base leading-7 text-slate-600">
               Report civic issues, track resolutions, and connect with the right municipal department.

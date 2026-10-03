@@ -4,9 +4,10 @@ import { useAuth } from '../context/AuthContext';
 import complaintService from '../services/complaintService';
 import StatusBadge from '../components/StatusBadge';
 import PriorityBadge from '../components/PriorityBadge';
+import SlaBadge from '../components/SlaBadge';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ImageCompareModal from '../components/ImageCompareModal';
-import { formatDate, formatRelativeTime, getStatusConfig } from '../utils/formatters';
+import { formatDate, formatRelativeTime } from '../utils/formatters';
 import { COMPLAINT_STATUSES, DEPARTMENTS } from '../utils/constants';
 import { getImageUrl } from '../services/api';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -160,25 +161,28 @@ const ComplaintDetailPage = () => {
         <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-3" />
         <h2 className="text-xl font-bold text-slate-800 mb-2">Complaint Not Found</h2>
         <p className="text-sm text-slate-500 mb-6">{error || 'The requested issue could not be loaded.'}</p>
-        <button
-          onClick={() => navigate(-1)}
-          className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-xs"
-        >
-          Go Back
-        </button>
+        <div className="flex justify-center gap-2"><button onClick={fetchComplaint} className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-xs">Try Again</button><button onClick={() => navigate(-1)} className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold text-xs">Go Back</button></div>
       </div>
     );
   }
 
   // Steps for progress track
   const steps = [
-    { title: 'Pending', desc: 'Logged by Citizen' },
-    { title: 'Assigned', desc: 'Routed to Department' },
-    { title: 'In Progress', desc: 'Field Team Dispatched' },
-    { title: 'Resolved', desc: 'Issue Fixed & Verified' },
+    { title: 'Submitted', desc: 'Complaint received', complete: (complaint.timeline || []).some((event) => event.status === 'Pending') },
+    { title: 'Analyzed', desc: 'Category and route assessed', complete: (complaint.timeline || []).some((event) => event.status === 'Analyzed') || Boolean(complaint.aiMetadata?.suggestedDepartment) },
+    { title: 'Assigned', desc: 'Sent to department/officer', complete: (complaint.timeline || []).some((event) => event.status === 'Assigned') || ['In Progress', 'Resolved'].includes(complaint.status) },
+    { title: 'In Progress', desc: 'Work underway', complete: (complaint.timeline || []).some((event) => event.status === 'In Progress') || ['In Progress', 'Resolved'].includes(complaint.status) },
+    { title: 'Resolved', desc: 'Resolution recorded', complete: complaint.status === 'Resolved' },
   ];
-
-  const currentStepIndex = getStatusConfig(complaint.status).stepIndex;
+  const currentStepIndex = complaint.status === 'Resolved' ? 4 : complaint.status === 'In Progress' ? 3 : complaint.status === 'Assigned' ? 2 : steps[1].complete ? 1 : 0;
+  const officerStatusOptions = {
+    Pending: ['Pending', 'Assigned', 'In Progress'],
+    Assigned: ['Assigned', 'In Progress'],
+    'In Progress': ['In Progress', 'Resolved'],
+    Resolved: ['Resolved'],
+    Rejected: ['Rejected'],
+  };
+  const allowedStatusOptions = user?.role === 'admin' ? COMPLAINT_STATUSES : (officerStatusOptions[complaint.status] || [complaint.status]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
@@ -215,7 +219,7 @@ const ComplaintDetailPage = () => {
       <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-sm">
         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 mb-2">
           <span className="font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
-            ID: #{complaint._id.slice(-6).toUpperCase()}
+            ID: CIV-{complaint._id.slice(-6).toUpperCase()}
           </span>
           <span>•</span>
           <span className="font-semibold text-blue-600 uppercase tracking-wider">{complaint.category}</span>
@@ -236,9 +240,9 @@ const ComplaintDetailPage = () => {
           <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
             Resolution Progress
           </h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
             {steps.map((st, idx) => {
-              const isPastOrCurrent = currentStepIndex >= idx;
+              const isPastOrCurrent = st.complete;
               const isCurrent = currentStepIndex === idx;
 
               return (
@@ -274,10 +278,12 @@ const ComplaintDetailPage = () => {
 
       {complaint.slaStatus && (
         <section className="bg-indigo-50 border border-indigo-200 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-3">
-          <div><p className="text-xs font-bold uppercase tracking-wider text-indigo-700">Configured application SLA</p><p className="text-sm font-semibold text-slate-800 mt-1">{complaint.slaDuration} hours · {complaint.slaStatus}</p></div>
+          <div><p className="text-xs font-bold uppercase tracking-wider text-indigo-700">Configured application SLA</p><p className="text-sm font-semibold text-slate-800 mt-1">{complaint.slaDuration} hours · <SlaBadge status={complaint.slaStatus} /></p></div>
           <p className="text-xs text-slate-600">Expected deadline: {formatDate(complaint.slaDeadline)}</p>
         </section>
       )}
+      {complaint.slaStatus === 'Overdue' && <p className="-mt-6 text-xs font-semibold text-rose-700">The expected deadline passed on {formatDate(complaint.slaDeadline)}. This status is calculated from the stored deadline.</p>}
+      {complaint.slaStatus === 'Escalated' && <p className="-mt-6 text-xs font-semibold text-purple-700">This complaint has been escalated for additional review.</p>}
       {isOfficerOrAdmin && complaint.aiMetadata?.duplicateOf?._id && (
         <section className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
           <div><p className="text-xs font-bold text-amber-900">Possible duplicate relationship</p><p className="text-xs text-amber-800 mt-1">Possible duplicate of CIV-{String(complaint.aiMetadata.duplicateOf._id).slice(-6).toUpperCase()}</p></div>
@@ -423,15 +429,13 @@ const ComplaintDetailPage = () => {
       </div>
 
       {/* Resolution Notes Display (If exists) */}
-      {complaint.resolutionNote && (
-        <div className="bg-emerald-50/70 border border-emerald-200 rounded-3xl p-6 sm:p-8">
+      {(complaint.resolutionNote || complaint.afterImage) && (
+        <div id="resolution-evidence" className="bg-emerald-50/70 border border-emerald-200 rounded-3xl p-6 sm:p-8 scroll-mt-24">
           <div className="flex items-center gap-2 mb-2 text-emerald-800">
             <FileCheck2 className="w-5 h-5 text-emerald-600" />
-            <h3 className="font-bold text-sm">Official Resolution Note</h3>
+            <h3 className="font-bold text-sm">Resolution Notes & Evidence</h3>
           </div>
-          <p className="text-xs sm:text-sm text-emerald-900 leading-relaxed font-medium">
-            "{complaint.resolutionNote}"
-          </p>
+          {complaint.resolutionNote && <p className="text-xs sm:text-sm text-emerald-900 leading-relaxed font-medium">"{complaint.resolutionNote}"</p>}
           {complaint.afterImage && (
             <div className="mt-4 flex items-center gap-3">
               <img
@@ -485,7 +489,7 @@ const ComplaintDetailPage = () => {
                   onChange={(e) => setUpdateStatus(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                 >
-                  {COMPLAINT_STATUSES.map((st) => (
+                  {allowedStatusOptions.map((st) => (
                     <option key={st} value={st}>
                       {st}
                     </option>
@@ -508,13 +512,13 @@ const ComplaintDetailPage = () => {
 
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Resolution Note & Actions Taken
+                  Progress Note & Actions Taken
               </label>
               <textarea
                 rows={3}
                 value={resolutionNote}
                 onChange={(e) => setResolutionNote(e.target.value)}
-                placeholder="Detail what field actions were taken (e.g., Road patched with cold mix asphalt by Team B; waste cleared and bin replaced)..."
+                placeholder="Describe the progress or resolution work completed..."
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
               />
             </div>
@@ -531,10 +535,10 @@ const ComplaintDetailPage = () => {
       )}
 
       {/* Chronological Status Timeline */}
-      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xs">
+      <div id="timeline" className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xs scroll-mt-24">
         <h3 className="text-base font-bold text-slate-900 mb-6 flex items-center gap-2">
           <Clock className="w-4 h-4 text-blue-600" />
-          Audit Timeline & Activity Log
+          Complaint Timeline
         </h3>
 
         <div className="space-y-6 relative before:absolute before:inset-0 before:left-3 before:w-0.5 before:bg-slate-200">
@@ -544,7 +548,7 @@ const ComplaintDetailPage = () => {
               <div className="flex-1 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <span className="font-bold text-xs text-slate-900">
-                    Status: <span className="text-blue-600">{tl.status}</span>
+                    Event: <span className="text-blue-600">{tl.status}</span>
                   </span>
                   <span className="text-[11px] text-slate-400">
                     {formatDate(tl.timestamp)}
