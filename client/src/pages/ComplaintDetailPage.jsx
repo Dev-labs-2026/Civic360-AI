@@ -8,6 +8,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ImageCompareModal from '../components/ImageCompareModal';
 import { formatDate, formatRelativeTime, getStatusConfig } from '../utils/formatters';
 import { COMPLAINT_STATUSES, DEPARTMENTS } from '../utils/constants';
+import { getImageUrl } from '../services/api';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import {
@@ -271,6 +272,16 @@ const ComplaintDetailPage = () => {
         </div>
       </div>
 
+      {complaint.slaStatus && (
+        <section className="bg-indigo-50 border border-indigo-200 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-3">
+          <div><p className="text-xs font-bold uppercase tracking-wider text-indigo-700">Configured application SLA</p><p className="text-sm font-semibold text-slate-800 mt-1">{complaint.slaDuration} hours · {complaint.slaStatus}</p></div>
+          <p className="text-xs text-slate-600">Expected deadline: {formatDate(complaint.slaDeadline)}</p>
+        </section>
+      )}
+      {user?.role !== 'citizen' && complaint.escalationHistory?.length > 0 && (
+        <section className="bg-white border border-rose-200 rounded-2xl p-5"><h3 className="font-bold text-sm text-rose-800 mb-3">Escalation history</h3><div className="space-y-3">{complaint.escalationHistory.map((item, index) => <div key={`${item.timestamp}-${index}`} className="text-xs text-slate-600 border-l-2 border-rose-300 pl-3"><p className="font-semibold">Level {item.escalationLevel}: {item.previousStatus} → {item.newStatus} · {formatDate(item.timestamp)}</p><p>{item.reason}</p><p>Referred to: {item.newAssignee?.name || complaint.escalatedTo?.name || 'Administrator queue'}</p></div>)}</div></section>
+      )}
+
       {/* Grid: Photos & Resolution Notes */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Reported Photo */}
@@ -287,7 +298,7 @@ const ComplaintDetailPage = () => {
             <div className="h-64 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
               {complaint.image ? (
                 <img
-                  src={complaint.image}
+                  src={getImageUrl(complaint.image)}
                   alt={complaint.title}
                   className="w-full h-full object-cover"
                 />
@@ -327,7 +338,7 @@ const ComplaintDetailPage = () => {
 
             <div className="h-64 rounded-2xl overflow-hidden border border-slate-200">
               <MapContainer
-                center={[complaint.latitude || 12.9716, complaint.longitude || 77.5946]}
+                center={[complaint.latitude ?? 22.5726, complaint.longitude ?? 88.3639]}
                 zoom={14}
                 scrollWheelZoom={false}
                 style={{ height: '100%', width: '100%' }}
@@ -337,7 +348,7 @@ const ComplaintDetailPage = () => {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 <Marker
-                  position={[complaint.latitude || 12.9716, complaint.longitude || 77.5946]}
+                  position={[complaint.latitude ?? 22.5726, complaint.longitude ?? 88.3639]}
                   icon={createPinIcon(complaint.status)}
                 >
                   <Popup>
@@ -365,14 +376,14 @@ const ComplaintDetailPage = () => {
       </div>
 
       {/* Department & Officer Details */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="space-y-1">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Department</p>
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-blue-600" />
-            <h4 className="font-bold text-slate-900 text-sm">{complaint.department || 'General'}</h4>
+            <h4 className="font-bold text-slate-900 text-sm">{complaint.department || 'General Civic Department'}</h4>
           </div>
-          <p className="text-xs text-slate-500">Auto-routed via AI matrix</p>
+          <p className="text-xs text-slate-500">Rule-based category routing</p>
         </div>
 
         <div className="space-y-1">
@@ -385,6 +396,13 @@ const ComplaintDetailPage = () => {
           </div>
           <p className="text-xs text-slate-500">
             {complaint.assignedOfficer?.phone ? `Contact: ${complaint.assignedOfficer.phone}` : 'Municipal Field Officer'}
+          </p>
+        </div>
+
+        <div className="space-y-1">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Routing explanation</p>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            {complaint.routingExplanation || 'Department selected from the complaint category; no assignment explanation was recorded.'}
           </p>
         </div>
 
@@ -411,7 +429,7 @@ const ComplaintDetailPage = () => {
           {complaint.afterImage && (
             <div className="mt-4 flex items-center gap-3">
               <img
-                src={complaint.afterImage}
+                src={getImageUrl(complaint.afterImage)}
                 alt="Resolved Proof"
                 className="w-20 h-20 object-cover rounded-xl border border-emerald-300 shadow-xs cursor-pointer hover:opacity-90"
                 onClick={() => setCompareModalOpen(true)}
@@ -541,8 +559,8 @@ const ComplaintDetailPage = () => {
       {/* Before / After Modal */}
       {compareModalOpen && (
         <ImageCompareModal
-          beforeImage={complaint.beforeImage || complaint.image}
-          afterImage={complaint.afterImage}
+          beforeImage={getImageUrl(complaint.beforeImage || complaint.image)}
+          afterImage={getImageUrl(complaint.afterImage)}
           title={complaint.title}
           onClose={() => setCompareModalOpen(false)}
         />

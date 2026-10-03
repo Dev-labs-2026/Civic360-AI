@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import getJwtSecret from '../utils/jwtSecret.js';
 
 /**
  * Protect routes - Authenticate JWT token
@@ -21,12 +22,17 @@ export const protect = async (req, res, next) => {
     });
   }
 
+  let decoded;
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || 'civic360_super_secret_jwt_key_2026_india'
-    );
+    decoded = jwt.verify(token, getJwtSecret());
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid or expired token. Please log in again.',
+    });
+  }
 
+  try {
     const user = await User.findById(decoded.id).select('-password');
     if (!user) {
       return res.status(401).json({
@@ -34,14 +40,10 @@ export const protect = async (req, res, next) => {
         message: 'The user belonging to this token no longer exists.',
       });
     }
-
     req.user = user;
-    next();
+    return next();
   } catch (error) {
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid or expired token. Please log in again.',
-    });
+    return next(error);
   }
 };
 

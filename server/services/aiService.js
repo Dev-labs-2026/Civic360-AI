@@ -1,3 +1,5 @@
+import { CATEGORY_DEPARTMENTS } from '../utils/departments.js';
+
 /**
  * Civic360 AI - Modular AI Service Engine
  * 
@@ -147,21 +149,7 @@ export const detectPriority = ({ category, description = '', title = '', ward = 
  * @returns {string} Department name
  */
 export const recommendDepartment = (category) => {
-  switch (category) {
-    case 'Pothole':
-    case 'Road Damage':
-      return 'Roads/PWD';
-    case 'Garbage':
-      return 'Sanitation';
-    case 'Broken Streetlight':
-      return 'Electrical';
-    case 'Water Leakage':
-      return 'Water Supply';
-    case 'Drainage':
-      return 'Drainage & Sewage';
-    default:
-      return 'General';
-  }
+  return CATEGORY_DEPARTMENTS[category] || CATEGORY_DEPARTMENTS.Other;
 };
 
 /**
@@ -195,7 +183,7 @@ export const detectDuplicateComplaint = async ({
   ComplaintModel,
   excludeId = null,
 }) => {
-  if (!ComplaintModel || !latitude || !longitude) {
+  if (!ComplaintModel || latitude === null || latitude === undefined || longitude === null || longitude === undefined) {
     return { duplicateDetected: false, duplicateComplaint: null, distanceMeters: null };
   }
 
@@ -224,7 +212,8 @@ export const detectDuplicateComplaint = async ({
     const PROXIMITY_THRESHOLD_METERS = 150; // 150 meters threshold
 
     for (const candidate of nearbyCandidates) {
-      if (candidate.latitude && candidate.longitude) {
+      if (candidate.latitude !== null && candidate.latitude !== undefined
+        && candidate.longitude !== null && candidate.longitude !== undefined) {
         const dist = calculateDistanceInMeters(
           latitude,
           longitude,
@@ -244,8 +233,8 @@ export const detectDuplicateComplaint = async ({
 
     return { duplicateDetected: false, duplicateComplaint: null, distanceMeters: null };
   } catch (error) {
-    console.warn('AI duplicate detection check failed gracefully:', error.message);
-    return { duplicateDetected: false, duplicateComplaint: null, distanceMeters: null };
+    console.error('Duplicate complaint lookup failed:', error.message);
+    throw new Error('Duplicate complaint lookup failed.');
   }
 };
 
@@ -280,7 +269,7 @@ export const analyzeComplaint = async ({
 
   // 4. Duplicate Check
   let duplicateInfo = { duplicateDetected: false, duplicateComplaint: null };
-  if (latitude && longitude && ComplaintModel) {
+  if (latitude !== null && latitude !== undefined && longitude !== null && longitude !== undefined && ComplaintModel) {
     duplicateInfo = await detectDuplicateComplaint({
       category: finalCategory,
       latitude,

@@ -29,10 +29,10 @@ const ReportIssuePage = () => {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState(searchParams.get('category') || 'Pothole');
   const [priority, setPriority] = useState('Medium');
-  const [ward, setWard] = useState(user?.ward || 'Ward 12 - Indiranagar');
-  const [address, setAddress] = useState('100 Feet Road, Indiranagar, Bengaluru');
-  const [latitude, setLatitude] = useState(12.9784);
-  const [longitude, setLongitude] = useState(77.6408);
+  const [ward, setWard] = useState(user?.ward || 'Kolkata • Ward 12');
+  const [address, setAddress] = useState('Park Street, Kolkata');
+  const [latitude, setLatitude] = useState(22.5553);
+  const [longitude, setLongitude] = useState(88.3505);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
 
@@ -122,7 +122,7 @@ const ReportIssuePage = () => {
       return;
     }
 
-    if (!latitude || !longitude) {
+    if (latitude === null || latitude === undefined || longitude === null || longitude === undefined) {
       setErrorMessage('Please select issue coordinates on the map.');
       return;
     }
@@ -257,7 +257,7 @@ const ReportIssuePage = () => {
             </div>
             <div className="flex-1 text-xs">
               <h4 className="font-bold text-sm text-amber-900">
-                Possible Duplicate Detected Nearby!
+                Possible duplicate / related complaint
               </h4>
               <p className="mt-1 text-amber-800 leading-relaxed">
                 An active complaint regarding "{duplicateWarning.title}" was already reported at this location ({duplicateWarning.address}) and is currently{' '}
@@ -293,7 +293,7 @@ const ReportIssuePage = () => {
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Deep pothole near Indiranagar 12th Main signal"
+                placeholder="e.g. Deep pothole near Park Street, Kolkata"
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
               />
             </div>
@@ -307,7 +307,7 @@ const ReportIssuePage = () => {
                 {aiAnalyzing && (
                   <span className="text-[11px] text-blue-600 font-semibold flex items-center gap-1">
                     <Sparkles className="w-3.5 h-3.5 animate-spin" />
-                    AI Analyzing...
+                    Checking routing rules...
                   </span>
                 )}
               </div>
@@ -325,9 +325,9 @@ const ReportIssuePage = () => {
                 <div className="mt-3 p-3 bg-blue-50/70 border border-blue-100 rounded-xl text-xs space-y-2">
                   <div className="flex items-center gap-1.5 font-bold text-blue-900">
                     <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Civic360 AI Analysis:</span>
+                    <span>Smart Civic Routing (Rule-Based):</span>
                     <span className="text-[10px] font-normal px-2 py-0.2 bg-blue-200/70 text-blue-800 rounded-full ml-auto">
-                      {(aiSuggestions.confidenceScore * 100).toFixed(0)}% Confidence
+                      Automated Suggestion
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-2 text-[11px]">
@@ -409,7 +409,7 @@ const ReportIssuePage = () => {
                   type="text"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="e.g. Near Indiranagar Metro Station Pillar #42"
+                  placeholder="e.g. Near Park Street Metro Station, Kolkata"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                 />
               </div>

@@ -1,3 +1,5 @@
+import { WARDS } from '../../../shared/wards.mjs';
+
 export const ISSUE_CATEGORIES = [
   'Pothole',
   'Garbage',
@@ -24,58 +26,53 @@ export const PRIORITIES = [
 ];
 
 export const DEPARTMENTS = [
-  'Roads/PWD',
+  'PWD / Roads',
   'Sanitation',
   'Electrical',
-  'Water Supply',
-  'Drainage & Sewage',
-  'General',
+  'Water Department',
+  'Drainage Department',
+  'General Civic Department',
 ];
 
-export const WARDS = [
-  'Ward 12 - Indiranagar',
-  'Ward 4 - Koramangala',
-  'Ward 8 - Whitefield',
-  'Ward 15 - Malleshwaram',
-  'Ward 3 - Jayanagar',
-  'Ward 1 - Central',
-  'Ward 9 - Bellandur',
-  'Ward 6 - HSR Layout',
-  'Ward 18 - Rajajinagar',
-  'Ward 22 - Hebbal',
-];
+export { WARDS };
 
+// NOTE: All demo accounts below are fictional and intended only for
+// demonstration purposes on the Civic360 AI platform.
 export const DEMO_ACCOUNTS = [
   {
+    id: 'citizen',
+    authRole: 'citizen',
+    department: 'General Civic Department',
     role: 'Citizen',
-    name: 'Aarav Sharma',
-    email: 'citizen@civic360.in',
-    password: 'citizen123',
-    desc: 'Report issues, track status & view local map',
+    name: 'Soumodeep Maiti',
+    desc: 'Report issues, track status & view West Bengal map',
     badge: 'Citizen',
   },
   {
-    role: 'Officer (PWD)',
-    name: 'Rajesh Kumar',
-    email: 'officer.roads@civic360.in',
-    password: 'officer123',
-    desc: 'Roads & PWD field officer dashboard',
+    id: 'pwd-officer',
+    authRole: 'officer',
+    department: 'PWD / Roads',
+    role: 'PWD Officer',
+    name: 'Souvik Baidya',
+    desc: 'Roads & PWD field officer — West Bengal',
     badge: 'PWD Officer',
   },
   {
-    role: 'Officer (Sanitation)',
-    name: 'Sunita Patel',
-    email: 'officer.sanitation@civic360.in',
-    password: 'officer123',
-    desc: 'Sanitation & Solid Waste officer',
-    badge: 'Sanitation',
+    id: 'sanitation-officer',
+    authRole: 'officer',
+    department: 'Sanitation',
+    role: 'Sanitation Officer',
+    name: 'Priya Sen',
+    desc: 'Sanitation officer — West Bengal',
+    badge: 'Sanitation Officer',
   },
   {
+    id: 'admin',
+    authRole: 'admin',
+    department: 'General Civic Department',
     role: 'Admin',
-    name: 'Dr. Priya Deshmukh',
-    email: 'admin@civic360.in',
-    password: 'admin123',
-    desc: 'Municipal commissioner / Executive analytics',
+    name: 'Soumodeep Maiti',
+    desc: 'Municipal Admin / Executive analytics — West Bengal',
     badge: 'Admin',
   },
 ];

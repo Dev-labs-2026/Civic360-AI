@@ -40,7 +40,7 @@ const CityMapPage = () => {
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Real-time geospatial intelligence of civic grievances, road hazards, and municipal resolutions across Bengaluru.
+            Demo civic reports and municipal resolutions across West Bengal.
           </p>
         </div>
 

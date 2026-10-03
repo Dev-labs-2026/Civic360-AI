@@ -44,8 +44,8 @@ const LocationMarkerHandler = ({ position, setPosition, onLocationChange }) => {
 };
 
 const MapPicker = ({
-  initialLat = 12.9716, // Default: Bengaluru Central
-  initialLng = 77.5946,
+  initialLat = 22.5726, // Default: Kolkata Central
+  initialLng = 88.3639,
   onLocationSelect,
   className = 'h-72',
 }) => {
@@ -54,7 +54,7 @@ const MapPicker = ({
   const [geoError, setGeoError] = useState('');
 
   useEffect(() => {
-    if (initialLat && initialLng) {
+    if (initialLat !== null && initialLat !== undefined && initialLng !== null && initialLng !== undefined) {
       setPosition([initialLat, initialLng]);
     }
   }, [initialLat, initialLng]);

@@ -5,16 +5,12 @@ import {
   MapPin, 
   ArrowRight, 
   ShieldCheck, 
-  Clock, 
   CheckCircle2, 
-  AlertTriangle,
   Compass,
   Cpu,
   Layers,
   Activity,
   ChevronRight,
-  TrendingUp,
-  Award
 } from 'lucide-react';
 import complaintService from '../services/complaintService';
 import ComplaintCard from '../components/ComplaintCard';
@@ -22,12 +18,6 @@ import { ISSUE_CATEGORIES } from '../utils/constants';
 
 const LandingPage = () => {
   const [recentComplaints, setRecentComplaints] = useState([]);
-  const [stats, setStats] = useState({
-    total: 248,
-    resolved: 194,
-    inProgress: 36,
-    avgHours: '28h',
-  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,12 +26,6 @@ const LandingPage = () => {
         const res = await complaintService.getComplaints({ limit: 4 });
         if (res.success && res.complaints) {
           setRecentComplaints(res.complaints);
-          if (res.total) {
-            setStats((prev) => ({
-              ...prev,
-              total: Math.max(res.total, 248),
-            }));
-          }
         }
       } catch (err) {
         console.warn('Failed to load recent complaints on landing:', err.message);
@@ -60,7 +44,7 @@ const LandingPage = () => {
           {/* Tagline Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100 text-blue-700 text-xs sm:text-sm font-semibold mb-6 shadow-xs border border-blue-200">
             <Sparkles className="w-4 h-4 text-blue-600" />
-            <span>Next-Gen Civic Governance for India</span>
+            <span>West Bengal, India · Civic issue reporting</span>
           </div>
 
           {/* Main Title & Hero Phrase */}
@@ -68,10 +52,10 @@ const LandingPage = () => {
             Civic360 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">AI</span>
           </h1>
           <p className="mt-4 text-2xl sm:text-3xl font-extrabold text-blue-600 tracking-tight">
-            Report. Route. Resolve.
+            Smarter Civic Issue Resolution for West Bengal
           </p>
           <p className="mt-4 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            AI-powered civic issue reporting and resolution platform. Connecting citizens directly with municipal departments to fix potholes, waste, water leaks, and streetlights faster.
+            Report civic issues, follow complaint updates, and connect reports with the appropriate civic department.
           </p>
 
           {/* Hero Buttons */}
@@ -84,31 +68,26 @@ const LandingPage = () => {
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
-              to="/track"
+              to="/map"
               className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-base border border-slate-300 shadow-sm transition-all flex items-center justify-center gap-2"
             >
-              <Clock className="w-4 h-4 text-slate-500" />
-              <span>Track Complaint</span>
+              <MapPin className="w-4 h-4 text-slate-500" />
+              <span>Explore Issue Map</span>
             </Link>
           </div>
 
-          {/* Trust Metric Badges */}
-          <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-8 border-t border-slate-200/80">
-            <div className="p-4 rounded-xl bg-white/70 border border-slate-200/60 shadow-xs">
-              <div className="text-2xl font-black text-blue-600">{stats.total}+</div>
-              <div className="text-xs font-medium text-slate-500 mt-1">Total Issues Logged</div>
+          <div className="mt-12 grid grid-cols-1 gap-4 border-t border-slate-200/80 pt-8 text-left sm:grid-cols-3">
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <div className="text-sm font-semibold text-slate-900">Guided reporting</div>
+              <p className="mt-1 text-xs leading-5 text-slate-500">Add a category, description, and location to a complaint.</p>
             </div>
-            <div className="p-4 rounded-xl bg-white/70 border border-slate-200/60 shadow-xs">
-              <div className="text-2xl font-black text-emerald-600">{stats.resolved}+</div>
-              <div className="text-xs font-medium text-slate-500 mt-1">Issues Resolved</div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <div className="text-sm font-semibold text-slate-900">Department-aware routing</div>
+              <p className="mt-1 text-xs leading-5 text-slate-500">Rule-based suggestions connect issue categories with civic departments.</p>
             </div>
-            <div className="p-4 rounded-xl bg-white/70 border border-slate-200/60 shadow-xs">
-              <div className="text-2xl font-black text-indigo-600">&lt; 48 hrs</div>
-              <div className="text-xs font-medium text-slate-500 mt-1">Avg Resolution Time</div>
-            </div>
-            <div className="p-4 rounded-xl bg-white/70 border border-slate-200/60 shadow-xs">
-              <div className="text-2xl font-black text-amber-600">96.4%</div>
-              <div className="text-xs font-medium text-slate-500 mt-1">AI Routing Precision</div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <div className="text-sm font-semibold text-slate-900">Status visibility</div>
+              <p className="mt-1 text-xs leading-5 text-slate-500">Citizens can follow complaint status and officer updates.</p>
             </div>
           </div>
         </div>
@@ -118,22 +97,22 @@ const LandingPage = () => {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-12">
           <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Built with Intelligent Civic Technology
+            Tools for clearer civic issue resolution
           </h2>
           <p className="mt-2 text-sm sm:text-base text-slate-500">
-            Civic360 AI automates the entire lifecycle of municipal complaints with precision tools.
+            A shared workflow for residents, officers, and administrators across West Bengal.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {/* Card 1: AI Issue Detection */}
           <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition-all group">
             <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <Cpu className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-slate-800 mb-2">AI Issue Detection</h3>
+            <h3 className="text-base font-bold text-slate-800 mb-2">Issue Classification</h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Auto-classifies citizen complaints, infers severity, and detects proximity duplicates to eliminate redundant municipal tickets.
+              Rule-based suggestions help select a category and assess the reported issue from its details.
             </p>
           </div>
 
@@ -142,9 +121,9 @@ const LandingPage = () => {
             <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <Layers className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-slate-800 mb-2">Smart Routing</h3>
+            <h3 className="text-base font-bold text-slate-800 mb-2">Smart Department Routing</h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Dynamically assigns tickets straight to the responsible ward officer (PWD, Sanitation, Water Board, Electrical) without red-tape.
+              Connects issue categories with departments such as PWD / Roads, Sanitation, Water, and Electrical.
             </p>
           </div>
 
@@ -153,9 +132,9 @@ const LandingPage = () => {
             <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <Activity className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-slate-800 mb-2">Live Tracking</h3>
+            <h3 className="text-base font-bold text-slate-800 mb-2">Complaint Status Tracking</h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Citizens receive transparent status updates from Pending to Assigned, Work in Progress, and Verified Resolution with photographic proof.
+              Citizens can check complaint status and review updates recorded by the assigned officer.
             </p>
           </div>
 
@@ -164,9 +143,29 @@ const LandingPage = () => {
             <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <Compass className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-slate-800 mb-2">Location Intelligence</h3>
+            <h3 className="text-base font-bold text-slate-800 mb-2">Ward and Location Map</h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Interactive Leaflet maps with geo-fencing, ward demarcation, and GPS accuracy to pin issues down to the exact street pole or road pothole.
+              Leaflet and OpenStreetMap views help residents locate reports around Kolkata and other demo areas.
+            </p>
+          </div>
+
+          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
+            <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mb-4">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-slate-800 mb-2">Priority Review</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Rule-based priority suggestions help teams review and organize incoming reports.
+            </p>
+          </div>
+
+          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
+            <div className="w-12 h-12 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center mb-4">
+              <ShieldCheck className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-slate-800 mb-2">Officer and Admin Coordination</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Role-based dashboards give officers and administrators tools to review assigned reports and activity.
             </p>
           </div>
         </div>
@@ -180,10 +179,10 @@ const LandingPage = () => {
               Citywide Coverage
             </span>
             <h2 className="text-2xl sm:text-4xl font-extrabold mt-3 tracking-tight">
-              Report Any Civic Issue in Under 60 Seconds
+              Start a Civic Issue Report
             </h2>
             <p className="mt-2 text-sm sm:text-base text-slate-400">
-              Select an issue category to get started immediately. Our smart engine will route it to the exact municipal division.
+              Choose an issue category and location. The routing rules suggest a relevant civic department.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-2.5">
@@ -207,10 +206,10 @@ const LandingPage = () => {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900">
-              Recent Reported Issues
+              Recent Issue Samples
             </h2>
             <p className="text-xs sm:text-sm text-slate-500">
-              Real-time feed of civic issues logged by citizens in the city
+              Sample complaints from the West Bengal demo environment are labeled as samples.
             </p>
           </div>
           <Link
@@ -223,9 +222,15 @@ const LandingPage = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {recentComplaints.map((complaint) => (
-            <ComplaintCard key={complaint._id} complaint={complaint} />
-          ))}
+          {loading ? (
+            <p className="col-span-full text-sm text-slate-500">Loading recent reports…</p>
+          ) : recentComplaints.length ? (
+            recentComplaints.map((complaint) => <ComplaintCard key={complaint._id} complaint={complaint} />)
+          ) : (
+            <p className="col-span-full rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-500">
+              No reports are available yet. Use the map or report form to explore the workflow.
+            </p>
+          )}
         </div>
       </section>
 
@@ -236,7 +241,7 @@ const LandingPage = () => {
             See a Problem in Your Neighborhood?
           </h2>
           <p className="mt-3 text-sm sm:text-base text-blue-100 max-w-xl mx-auto">
-            Take a photo, pin the location, and let Civic360 AI alert the right authorities. Join thousands of citizens making our cities better.
+            Add a description and location so the right team can review your report.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link

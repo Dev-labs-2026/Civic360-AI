@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import StatusBadge from './StatusBadge';
 import PriorityBadge from './PriorityBadge';
 import { formatRelativeTime } from '../utils/formatters';
+import { getImageUrl } from '../services/api';
 import { 
   MapPin, 
   Building2, 
@@ -49,7 +50,7 @@ const ComplaintCard = ({ complaint }) => {
         {complaint.image && (
           <div className="relative h-44 w-full bg-slate-100 overflow-hidden">
             <img
-              src={complaint.image}
+              src={getImageUrl(complaint.image)}
               alt={complaint.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               onError={(e) => {
@@ -98,12 +99,18 @@ const ComplaintCard = ({ complaint }) => {
           <p className="text-xs text-slate-500 line-clamp-2 mb-4 leading-relaxed">
             {complaint.description}
           </p>
+          {complaint.slaStatus && (
+            <div className="text-[11px] mb-3 flex items-center justify-between gap-2">
+              <span className={`font-bold ${['Overdue', 'Escalated'].includes(complaint.slaStatus) ? 'text-rose-700' : 'text-indigo-700'}`}>SLA: {complaint.slaStatus}</span>
+              {complaint.slaDeadline && <span className="text-slate-500">Due {new Date(complaint.slaDeadline).toLocaleString()}</span>}
+            </div>
+          )}
 
           {/* Location & Department */}
           <div className="space-y-1.5 text-xs text-slate-600 mb-4 border-t border-slate-100 pt-3">
             <div className="flex items-center gap-1.5 truncate">
               <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <span className="truncate">{complaint.address || complaint.ward || 'Bengaluru, India'}</span>
+              <span className="truncate">{complaint.address || complaint.ward || 'Kolkata, West Bengal'}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />

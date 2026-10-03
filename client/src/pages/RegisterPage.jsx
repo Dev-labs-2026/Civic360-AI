@@ -14,8 +14,8 @@ const RegisterPage = () => {
     password: '',
     phone: '',
     role: 'citizen',
-    department: 'General',
-    ward: 'Ward 12 - Indiranagar',
+    department: 'General Civic Department',
+    ward: 'Kolkata • Ward 12',
   });
 
   const [error, setError] = useState('');
@@ -170,7 +170,7 @@ const RegisterPage = () => {
                   onChange={handleChange}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                 >
-                  {DEPARTMENTS.filter(d => d !== 'General').map((dept) => (
+                {DEPARTMENTS.filter(d => d !== 'General Civic Department').map((dept) => (
                     <option key={dept} value={dept}>
                       {dept}
                     </option>

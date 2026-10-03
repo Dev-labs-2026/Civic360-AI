@@ -38,6 +38,7 @@ const OfficerDashboard = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
+  const [slaStatusFilter, setSlaStatusFilter] = useState('');
 
   const loadData = async () => {
     try {
@@ -53,12 +54,13 @@ const OfficerDashboard = () => {
         status: statusFilter,
         category: categoryFilter,
         priority: priorityFilter,
+        slaStatus: slaStatusFilter,
       };
 
       if (scope === 'assigned') {
         params.assignedToMe = 'true';
       } else {
-        params.department = user?.department || 'General';
+        params.department = user?.department || 'General Civic Department';
       }
 
       const compRes = await complaintService.getComplaints(params);
@@ -74,10 +76,11 @@ const OfficerDashboard = () => {
 
   useEffect(() => {
     loadData();
-  }, [scope, statusFilter, categoryFilter, priorityFilter]);
+  }, [scope, statusFilter, categoryFilter, priorityFilter, slaStatusFilter]);
 
   const pStats = dashboardData?.personal || {
     total: 0,
+    workload: 0,
     pending: 0,
     inProgress: 0,
     resolved: 0,
@@ -85,8 +88,9 @@ const OfficerDashboard = () => {
   };
 
   const dStats = dashboardData?.department || {
-    name: user?.department || 'General',
+    name: user?.department || 'General Civic Department',
     total: 0,
+    unassigned: 0,
     pending: 0,
     resolved: 0,
   };
@@ -101,13 +105,13 @@ const OfficerDashboard = () => {
               Field Officer Workspace
             </span>
             <span className="text-xs font-semibold text-slate-500">•</span>
-            <span className="text-xs font-bold text-slate-700">{user?.department || 'Roads/PWD'}</span>
+            <span className="text-xs font-bold text-slate-700">{user?.department || 'PWD / Roads'}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
             Officer {user?.name}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Ward Jurisdiction: <span className="font-semibold text-slate-700">{user?.ward || 'Ward 12 - Indiranagar'}</span>
+            Ward Jurisdiction: <span className="font-semibold text-slate-700">{user?.ward || 'Kolkata • Ward 12'}</span>
           </p>
         </div>
 
@@ -133,7 +137,7 @@ const OfficerDashboard = () => {
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Department Pool ({dStats.total})
+            Department Pool ({dStats.total}) · {dStats.unassigned} unassigned
           </button>
         </div>
       </div>
@@ -144,7 +148,7 @@ const OfficerDashboard = () => {
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Assigned</p>
             <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{pStats.total}</h3>
-            <p className="text-[11px] text-slate-500 mt-0.5">Total tickets</p>
+            <p className="text-[11px] text-slate-500 mt-0.5">{pStats.workload} active workload</p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
             <Briefcase className="w-6 h-6" />
@@ -221,12 +225,18 @@ const OfficerDashboard = () => {
             ))}
           </select>
 
-          {(statusFilter || categoryFilter || priorityFilter) && (
+          <select value={slaStatusFilter} onChange={(e) => setSlaStatusFilter(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white">
+            <option value="">All SLA states</option>
+            {['On Track', 'Due Soon', 'Overdue', 'Escalated', 'Resolved'].map((state) => <option key={state} value={state}>{state}</option>)}
+          </select>
+
+          {(statusFilter || categoryFilter || priorityFilter || slaStatusFilter) && (
             <button
               onClick={() => {
                 setStatusFilter('');
                 setCategoryFilter('');
                 setPriorityFilter('');
+                setSlaStatusFilter('');
               }}
               className="px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200"
             >

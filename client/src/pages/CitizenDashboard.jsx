@@ -64,7 +64,7 @@ const CitizenDashboard = () => {
               Welcome back, {user?.name || 'Citizen'}!
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
-              {user?.ward || 'Ward 12 - Indiranagar'}
+              {user?.ward || 'Kolkata • Ward 12'}
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">

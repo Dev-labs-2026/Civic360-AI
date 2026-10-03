@@ -6,6 +6,7 @@ import StatusBadge from './StatusBadge';
 import PriorityBadge from './PriorityBadge';
 import { ArrowRight, MapPin, Layers } from 'lucide-react';
 import { ISSUE_CATEGORIES } from '../utils/constants';
+import { getImageUrl } from '../services/api';
 
 // Helper to create colored pin markers
 const createMarkerIcon = (priority, status) => {
@@ -37,7 +38,7 @@ const createMarkerIcon = (priority, status) => {
 
 const ComplaintMap = ({
   complaints = [],
-  center = [12.9716, 77.5946],
+  center = [22.5726, 88.3639],
   zoom = 12,
   height = '500px',
   showFilters = true,
@@ -47,7 +48,7 @@ const ComplaintMap = ({
 
   // Filter complaints for map display
   const filteredComplaints = complaints.filter((c) => {
-    if (!c.latitude || !c.longitude) return false;
+    if (c.latitude === null || c.latitude === undefined || c.longitude === null || c.longitude === undefined) return false;
     const matchCat = selectedCategory === 'All' || c.category === selectedCategory;
     const matchStat = selectedStatus === 'All' || c.status === selectedStatus;
     return matchCat && matchStat;
@@ -119,7 +120,7 @@ const ComplaintMap = ({
                 <div className="p-1">
                   {c.image && (
                     <img
-                      src={c.image}
+                      src={getImageUrl(c.image)}
                       alt={c.title}
                       className="w-full h-28 object-cover rounded-lg mb-2"
                       onError={(e) => {
@@ -140,6 +141,7 @@ const ComplaintMap = ({
                     <MapPin className="w-3 h-3 shrink-0" />
                     <span className="truncate">{c.address || c.ward}</span>
                   </div>
+                  {c.ward && c.address && <p className="text-[10px] text-slate-500 mb-2">Ward: {c.ward}</p>}
                   <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                     <StatusBadge status={c.status} size="sm" />
                     <Link

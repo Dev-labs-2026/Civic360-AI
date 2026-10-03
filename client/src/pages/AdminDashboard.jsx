@@ -56,7 +56,7 @@ const AdminDashboard = () => {
   // User edit state
   const [selectedUser, setSelectedUser] = useState(null);
   const [newRole, setNewRole] = useState('officer');
-  const [newDept, setNewDept] = useState('Roads/PWD');
+  const [newDept, setNewDept] = useState('PWD / Roads');
   const [userUpdating, setUserUpdating] = useState(false);
 
   const fetchAdminData = async () => {
@@ -276,9 +276,50 @@ const AdminDashboard = () => {
         </div>
       </div>
 
+      {/* Lifecycle Status Metrics Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="p-3.5 bg-amber-50/80 border border-amber-200/80 rounded-2xl flex items-center justify-between shadow-2xs">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+            <span className="text-xs font-bold text-slate-700">Pending Review</span>
+          </div>
+          <span className="font-mono font-extrabold text-amber-800 text-sm">{summary.pendingComplaints || 0}</span>
+        </div>
+        <div className="p-3.5 bg-blue-50/80 border border-blue-200/80 rounded-2xl flex items-center justify-between shadow-2xs">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+            <span className="text-xs font-bold text-slate-700">Assigned</span>
+          </div>
+          <span className="font-mono font-extrabold text-blue-800 text-sm">{summary.assignedComplaints || 0}</span>
+        </div>
+        <div className="p-3.5 bg-indigo-50/80 border border-indigo-200/80 rounded-2xl flex items-center justify-between shadow-2xs">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+            <span className="text-xs font-bold text-slate-700">In Progress</span>
+          </div>
+          <span className="font-mono font-extrabold text-indigo-800 text-sm">{summary.inProgressComplaints || 0}</span>
+        </div>
+        <div className="p-3.5 bg-emerald-50/80 border border-emerald-200/80 rounded-2xl flex items-center justify-between shadow-2xs">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+            <span className="text-xs font-bold text-slate-700">Resolved</span>
+          </div>
+          <span className="font-mono font-extrabold text-emerald-800 text-sm">{summary.resolvedComplaints || 0}</span>
+        </div>
+      </div>
+
       {/* Tab 1: Analytics Overview */}
       {activeTab === 'overview' && (
         <div className="space-y-8">
+          <section className="bg-white p-5 rounded-2xl border border-indigo-200 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <div><h3 className="text-sm font-bold text-slate-900">Application SLA overview</h3><p className="text-[11px] text-slate-500">Configured demo targets and live deadline performance</p></div>
+              <span className="text-xs font-bold text-indigo-700">On-time resolution: {data?.slaStats?.onTimeResolutionRate ?? 0}%</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {[['On Track', 'onTrack', 'text-emerald-700'], ['Due Soon', 'dueSoon', 'text-amber-700'], ['Overdue', 'overdue', 'text-rose-700'], ['Escalated', 'escalated', 'text-purple-700'], ['Resolved', 'resolved', 'text-slate-700']].map(([label, key, color]) => <div key={key} className="rounded-xl bg-slate-50 p-3"><p className="text-[11px] text-slate-500">{label}</p><p className={`text-xl font-black ${color}`}>{data?.slaStats?.[key] ?? 0}</p></div>)}
+            </div>
+          </section>
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Category Doughnut Chart */}
@@ -475,7 +516,7 @@ const AdminDashboard = () => {
                         onClick={() => {
                           setSelectedUser(u);
                           setNewRole(u.role);
-                          setNewDept(u.department || 'Roads/PWD');
+                          setNewDept(u.department || 'PWD / Roads');
                         }}
                         className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 font-semibold"
                       >
@@ -524,7 +565,7 @@ const AdminDashboard = () => {
                     onChange={(e) => setNewDept(e.target.value)}
                     className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs bg-white"
                   >
-                    {DEPARTMENTS.filter(d => d !== 'General').map((d) => (
+                    {DEPARTMENTS.filter(d => d !== 'General Civic Department').map((d) => (
                       <option key={d} value={d}>{d}</option>
                     ))}
                   </select>

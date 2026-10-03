@@ -1,4 +1,5 @@
 import Complaint from '../models/Complaint.js';
+import { departmentQueryValues } from '../utils/departments.js';
 
 /**
  * @desc    Get Officer Dashboard analytics
@@ -8,37 +9,40 @@ import Complaint from '../models/Complaint.js';
 export const getOfficerDashboard = async (req, res) => {
   try {
     const officerId = req.user._id;
-    const department = req.user.department || 'General';
+    const department = req.user.department || 'General Civic Department';
+    const departmentFilter = { department: { $in: departmentQueryValues(department) } };
 
     // Personal assigned complaints
     const assignedTotal = await Complaint.countDocuments({ assignedOfficer: officerId });
+    const workload = await Complaint.countDocuments({ assignedOfficer: officerId, status: { $in: ['Pending', 'Assigned', 'In Progress'] } });
     const assignedPending = await Complaint.countDocuments({ assignedOfficer: officerId, status: 'Assigned' });
     const assignedInProgress = await Complaint.countDocuments({ assignedOfficer: officerId, status: 'In Progress' });
     const assignedResolved = await Complaint.countDocuments({ assignedOfficer: officerId, status: 'Resolved' });
 
     // Departmental complaints
-    const deptTotal = await Complaint.countDocuments({ department });
-    const deptPending = await Complaint.countDocuments({ department, status: 'Pending' });
-    const deptAssigned = await Complaint.countDocuments({ department, status: 'Assigned' });
-    const deptInProgress = await Complaint.countDocuments({ department, status: 'In Progress' });
-    const deptResolved = await Complaint.countDocuments({ department, status: 'Resolved' });
+    const deptTotal = await Complaint.countDocuments(departmentFilter);
+    const deptPending = await Complaint.countDocuments({ ...departmentFilter, status: 'Pending' });
+    const deptUnassigned = await Complaint.countDocuments({ ...departmentFilter, status: 'Pending', assignedOfficer: null });
+    const deptAssigned = await Complaint.countDocuments({ ...departmentFilter, status: 'Assigned' });
+    const deptInProgress = await Complaint.countDocuments({ ...departmentFilter, status: 'In Progress' });
+    const deptResolved = await Complaint.countDocuments({ ...departmentFilter, status: 'Resolved' });
 
     // Priority breakdown of assigned complaints
     const criticalCount = await Complaint.countDocuments({
       assignedOfficer: officerId,
       priority: 'Critical',
-      status: { $ne: 'Resolved' },
+      status: { $in: ['Pending', 'Assigned', 'In Progress'] },
     });
     const highCount = await Complaint.countDocuments({
       assignedOfficer: officerId,
       priority: 'High',
-      status: { $ne: 'Resolved' },
+      status: { $in: ['Pending', 'Assigned', 'In Progress'] },
     });
 
     // Recent 5 active assigned complaints
     const recentAssigned = await Complaint.find({
       assignedOfficer: officerId,
-      status: { $ne: 'Resolved' },
+      status: { $in: ['Pending', 'Assigned', 'In Progress'] },
     })
       .populate('citizen', 'name phone')
       .sort({ priority: 1, createdAt: -1 })
@@ -49,6 +53,7 @@ export const getOfficerDashboard = async (req, res) => {
       data: {
         personal: {
           total: assignedTotal,
+          workload,
           pending: assignedPending,
           inProgress: assignedInProgress,
           resolved: assignedResolved,
@@ -59,6 +64,7 @@ export const getOfficerDashboard = async (req, res) => {
           name: department,
           total: deptTotal,
           pending: deptPending,
+          unassigned: deptUnassigned,
           assigned: deptAssigned,
           inProgress: deptInProgress,
           resolved: deptResolved,

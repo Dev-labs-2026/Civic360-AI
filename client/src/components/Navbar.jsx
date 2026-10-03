@@ -6,6 +6,7 @@ import NotificationDrawer from './NotificationDrawer';
 import DemoSwitcherModal from './DemoSwitcherModal';
 import {
   ShieldAlert,
+  ShieldCheck,
   PlusCircle,
   Bell,
   Menu,
@@ -14,7 +15,6 @@ import {
   LogOut,
   MapPin,
   Search,
-  Sparkles,
   LayoutDashboard,
   Shield,
   Briefcase,
@@ -60,7 +60,7 @@ const Navbar = () => {
                 </span>
               </div>
               <p className="text-[10px] text-slate-400 font-medium tracking-wide">
-                India Civic Platform
+                West Bengal · India
               </p>
             </div>
           </Link>
@@ -141,16 +141,18 @@ const Navbar = () => {
 
           {/* Right Action Icons & Auth */}
           <div className="flex items-center gap-2.5">
-            {/* Quick Demo Switcher button */}
-            <button
-              type="button"
-              onClick={() => setDemoModalOpen(true)}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-semibold transition-all shadow-xs"
-              title="Switch demo persona"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-              <span className="hidden sm:inline">Demo Switcher</span>
-            </button>
+            {isAuthenticated && user?.isDemo && (
+              <button
+                type="button"
+                onClick={() => setDemoModalOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-900"
+                title="Switch demo role"
+                aria-label="Demo Environment. Select another demo role."
+              >
+                <ShieldCheck className="h-3.5 w-3.5 text-blue-800" aria-hidden="true" />
+                <span className="hidden sm:inline">Demo Environment</span>
+              </button>
+            )}
 
             {/* Report New Issue CTA */}
             <Link

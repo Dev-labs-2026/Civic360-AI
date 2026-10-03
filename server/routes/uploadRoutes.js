@@ -1,6 +1,7 @@
 import express from 'express';
 import { upload } from '../middleware/upload.js';
 import { protect } from '../middleware/auth.js';
+import { rateLimit } from '../middleware/rateLimit.js';
 
 const router = express.Router();
 
@@ -9,7 +10,13 @@ const router = express.Router();
  * @desc    Upload an issue image
  * @access  Private
  */
-router.post('/', protect, upload.single('image'), (req, res) => {
+router.post('/', protect, rateLimit({ windowMs: 60_000, max: 12 }), (req, res, next) => {
+  upload.single('image')(req, res, (error) => {
+    if (!error) return next();
+    const status = error.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+    return res.status(status).json({ success: false, message: status === 413 ? 'Image must be 5 MB or smaller.' : 'Invalid image upload.' });
+  });
+}, (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({

@@ -22,6 +22,10 @@ const notificationSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isDemo: {
+      type: Boolean,
+      default: false,
+    },
     complaintId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Complaint',
