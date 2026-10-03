@@ -40,6 +40,7 @@ const ReportIssuePage = () => {
   const [aiAnalyzing, setAiAnalyzing] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState(null);
   const [duplicateWarning, setDuplicateWarning] = useState(null);
+  const [confirmedDifferentIssue, setConfirmedDifferentIssue] = useState(false);
 
   // Form submission state
   const [submitting, setSubmitting] = useState(false);
@@ -85,10 +86,16 @@ const ReportIssuePage = () => {
       if (res.success && res.analysis) {
         setAiSuggestions(res.analysis);
         if (res.analysis.duplicateDetected) {
-          setDuplicateWarning(res.analysis.duplicateComplaint);
+          setDuplicateWarning({
+            ...res.analysis.duplicateComplaint,
+            distanceMeters: res.analysis.distanceMeters,
+            matchLevel: res.analysis.matchLevel,
+            similarityReason: res.analysis.similarityReason,
+          });
         } else {
           setDuplicateWarning(null);
         }
+        setConfirmedDifferentIssue(false);
 
         // If user hasn't explicitly customized priority, apply AI suggestion
         if (res.analysis.suggestedPriority) {
@@ -159,6 +166,7 @@ const ReportIssuePage = () => {
         latitude: Number(latitude),
         longitude: Number(longitude),
         image: uploadedImageUrl || '',
+        confirmDifferentIssue: confirmedDifferentIssue,
       };
 
       const res = await complaintService.createComplaint(complaintData);
@@ -167,6 +175,12 @@ const ReportIssuePage = () => {
         setSuccessComplaint(res.complaint);
       }
     } catch (err) {
+      if (err.status === 409 && err.data?.code === 'POSSIBLE_DUPLICATE') {
+        setDuplicateWarning(err.data.duplicate);
+        setConfirmedDifferentIssue(false);
+        setErrorMessage('Review the similar complaint below. Choose “This is a different issue” to continue reporting.');
+        return;
+      }
       setErrorMessage(err.message || 'Failed to submit complaint. Please try again.');
     } finally {
       setSubmitting(false);
@@ -181,7 +195,7 @@ const ReportIssuePage = () => {
           Report a Civic Issue
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Our AI engine automatically categorizes your complaint, assesses priority, and routes it to the designated municipal officer.
+          Rule-based analysis suggests a category and priority, checks for recent nearby reports, and routes your complaint to the designated department.
         </p>
       </div>
 
@@ -257,24 +271,28 @@ const ReportIssuePage = () => {
             </div>
             <div className="flex-1 text-xs">
               <h4 className="font-bold text-sm text-amber-900">
-                Possible duplicate / related complaint
+                Possible similar complaint found
               </h4>
               <p className="mt-1 text-amber-800 leading-relaxed">
-                An active complaint regarding "{duplicateWarning.title}" was already reported at this location ({duplicateWarning.address}) and is currently{' '}
-                <span className="font-bold underline">{duplicateWarning.status}</span>.
+                An existing complaint about {duplicateWarning.category || 'this issue'} was reported {duplicateWarning.distanceMeters}m away.
+                {' '}<span className="font-bold">{duplicateWarning.similarityReason || duplicateWarning.matchLevel}</span>
               </p>
+              <div className="mt-2 rounded-xl bg-white/70 p-3 space-y-1">
+                <p>Existing complaint: <b>{duplicateWarning.reference || `CIV-${String(duplicateWarning._id).slice(-6).toUpperCase()}`}</b></p>
+                <p>Category: <b>{duplicateWarning.category}</b> · Status: <b>{duplicateWarning.status}</b></p>
+                {duplicateWarning.createdAt && <p>Reported: <b>{new Date(duplicateWarning.createdAt).toLocaleString()}</b> · Match: <b>{duplicateWarning.matchLevel}</b></p>}
+              </div>
               <div className="mt-2.5 flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => navigate(`/complaints/${duplicateWarning._id}`)}
+                  onClick={() => window.open(`/complaints/${duplicateWarning._id}`, '_blank', 'noopener,noreferrer')}
                   className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold inline-flex items-center gap-1 text-[11px]"
                 >
                   <span>View Existing Complaint</span>
                   <ExternalLink className="w-3 h-3" />
                 </button>
-                <span className="text-[11px] text-amber-700">
-                  You may still submit if your report describes a new or worsening problem.
-                </span>
+                <button type="button" onClick={() => navigate(`/complaints/${duplicateWarning._id}`)} className="px-3 py-1.5 rounded-lg border border-amber-500 text-amber-900 font-bold text-[11px]">Follow Existing Complaint</button>
+                <button type="button" onClick={() => { setConfirmedDifferentIssue(true); setErrorMessage(''); }} className={`px-3 py-1.5 rounded-lg font-bold text-[11px] ${confirmedDifferentIssue ? 'bg-emerald-700 text-white' : 'bg-white border border-amber-500 text-amber-900'}`}>This is a different issue</button>
               </div>
             </div>
           </div>
@@ -487,11 +505,11 @@ const ReportIssuePage = () => {
 
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || (Boolean(duplicateWarning) && !confirmedDifferentIssue)}
             className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <Send className="w-4 h-4" />
-            <span>{submitting ? 'Submitting Complaint...' : 'Submit Complaint'}</span>
+            <span>{submitting ? 'Submitting Complaint...' : duplicateWarning && !confirmedDifferentIssue ? 'Review Similar Complaint' : 'Submit Complaint'}</span>
           </button>
         </div>
       </form>

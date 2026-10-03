@@ -320,6 +320,14 @@ const AdminDashboard = () => {
               {[['On Track', 'onTrack', 'text-emerald-700'], ['Due Soon', 'dueSoon', 'text-amber-700'], ['Overdue', 'overdue', 'text-rose-700'], ['Escalated', 'escalated', 'text-purple-700'], ['Resolved', 'resolved', 'text-slate-700']].map(([label, key, color]) => <div key={key} className="rounded-xl bg-slate-50 p-3"><p className="text-[11px] text-slate-500">{label}</p><p className={`text-xl font-black ${color}`}>{data?.slaStats?.[key] ?? 0}</p></div>)}
             </div>
           </section>
+          <section className="bg-white p-5 rounded-2xl border border-amber-200 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div><h3 className="text-sm font-bold text-slate-900">Possible duplicate reports</h3><p className="text-[11px] text-slate-500">Citizens confirmed these were separate issues after a rule-based match</p></div>
+              <span className="text-xl font-black text-amber-800">{summary.duplicateRelatedComplaints || 0}</span>
+            </div>
+            {(data?.duplicateByWard || []).length > 0 && <p className="text-xs text-slate-600 mb-3">Repeated wards: {data.duplicateByWard.map((item) => `${item._id} (${item.count})`).join(' · ')}</p>}
+            {(data?.duplicateComplaints || []).length > 0 ? <div className="space-y-2">{data.duplicateComplaints.slice(0, 5).map((item) => <div key={item._id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-amber-50/70 p-3 text-xs"><span><b>CIV-{String(item._id).slice(-6).toUpperCase()}</b> · {item.category} · {item.status}</span><Link className="font-bold text-amber-800 underline" to={`/complaints/${item._id}`}>Inspect related report</Link></div>)}</div> : <p className="text-xs text-slate-500">No citizen-confirmed possible duplicate reports yet.</p>}
+          </section>
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Category Doughnut Chart */}

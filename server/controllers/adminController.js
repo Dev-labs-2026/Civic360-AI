@@ -22,6 +22,20 @@ export const getAdminDashboard = async (req, res) => {
     const rejectedComplaints = await Complaint.countDocuments({ status: 'Rejected' });
     const criticalComplaints = await Complaint.countDocuments({ priority: 'Critical', status: { $ne: 'Resolved' } });
     const highComplaints = await Complaint.countDocuments({ priority: 'High', status: { $ne: 'Resolved' } });
+    const duplicateRelatedComplaints = await Complaint.countDocuments({ 'aiMetadata.duplicateOf': { $ne: null } });
+    const duplicateByWard = await Complaint.aggregate([
+      { $match: { 'aiMetadata.duplicateOf': { $ne: null } } },
+      { $group: { _id: '$ward', count: { $sum: 1 } } },
+      { $match: { count: { $gt: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 },
+    ]);
+    const duplicateComplaints = await Complaint.find({ 'aiMetadata.duplicateOf': { $ne: null } })
+      .populate('aiMetadata.duplicateOf', 'title category status createdAt')
+      .populate('assignedOfficer', 'name department')
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean();
 
     const now = new Date();
     const soon = new Date(now.getTime() + SLA_DUE_SOON_WINDOW_HOURS * 60 * 60 * 1000);
@@ -135,6 +149,7 @@ export const getAdminDashboard = async (req, res) => {
           rejectedComplaints,
           criticalComplaints,
           highComplaints,
+          duplicateRelatedComplaints,
           resolutionRate,
           totalOfficers,
           totalCitizens,
@@ -144,6 +159,8 @@ export const getAdminDashboard = async (req, res) => {
         wardStats,
         priorityStats,
         urgentComplaints,
+        duplicateByWard,
+        duplicateComplaints,
         slaStats,
         overdueComplaints: overdueComplaints.map((complaint) => ({ ...complaint, slaStatus: calculateSlaStatus(complaint, now) })),
         escalatedComplaints: escalatedComplaints.map((complaint) => ({ ...complaint, slaStatus: calculateSlaStatus(complaint, now) })),

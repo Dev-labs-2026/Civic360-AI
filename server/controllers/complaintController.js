@@ -168,9 +168,10 @@ export const getComplaintById = async (req, res) => {
 
 export const createComplaint = async (req, res) => {
   if (req.user.role !== 'citizen') return reject(res, 403, 'Only citizens may submit complaints.');
-  const createFields = ['title', 'description', 'category', 'image', 'latitude', 'longitude', 'address', 'ward', 'priority'];
+  const createFields = ['title', 'description', 'category', 'image', 'latitude', 'longitude', 'address', 'ward', 'priority', 'confirmDifferentIssue'];
   if (Object.keys(req.body).some((key) => !createFields.includes(key))) return reject(res, 400, 'Unsupported complaint field.');
-  const { title, description, category, image, latitude, longitude, address, ward, priority } = req.body;
+  const { title, description, category, image, latitude, longitude, address, ward, priority, confirmDifferentIssue = false } = req.body;
+  if (typeof confirmDifferentIssue !== 'boolean') return reject(res, 400, 'Duplicate confirmation must be a boolean.');
   if (typeof title !== 'string' || !title.trim() || title.length > 120 || typeof description !== 'string' || !description.trim() || description.length > 3000) {
     return reject(res, 400, 'A title (up to 120 characters) and description (up to 3000 characters) are required.');
   }
@@ -181,6 +182,14 @@ export const createComplaint = async (req, res) => {
   if (image !== undefined && (typeof image !== 'string' || image.length > 2_000_000)) return reject(res, 400, 'Image reference is invalid or too large. Upload the image separately.');
   try {
     const aiAnalysis = await aiService.analyzeComplaint({ title, description, category, latitude: Number(latitude), longitude: Number(longitude), ward, ComplaintModel: Complaint });
+    if (aiAnalysis.duplicateDetected && !confirmDifferentIssue) {
+      return res.status(409).json({
+        success: false,
+        code: 'POSSIBLE_DUPLICATE',
+        message: 'A recent nearby complaint in the same category already exists. Review it or confirm that this is a different issue.',
+        duplicate: { ...aiAnalysis.duplicateComplaint, distanceMeters: aiAnalysis.distanceMeters, matchLevel: aiAnalysis.matchLevel, similarityReason: aiAnalysis.similarityReason },
+      });
+    }
     const determinedCategory = category && category !== 'Other' ? category : (aiAnalysis.suggestedCategory || 'Other');
     const determinedPriority = priority || aiAnalysis.suggestedPriority || 'Medium';
     const determinedDepartment = aiService.recommendDepartment(determinedCategory);
@@ -194,7 +203,7 @@ export const createComplaint = async (req, res) => {
       status: assignedOfficerId ? 'Assigned' : 'Pending', citizen: req.user._id, assignedOfficer: assignedOfficerId,
       department: determinedDepartment, routingExplanation: assignment.explanation,
       ...sla, escalationLevel: 0, escalationHistory: [],
-      aiMetadata: { confidenceScore: aiAnalysis.confidenceScore, detectedKeywords: aiAnalysis.detectedKeywords || [], duplicateDetected: aiAnalysis.duplicateDetected || false, duplicateOf: aiAnalysis.duplicateComplaint?._id || null, suggestedPriority: aiAnalysis.suggestedPriority, suggestedDepartment: determinedDepartment, autoRouted: Boolean(assignedOfficerId) },
+      aiMetadata: { confidenceScore: aiAnalysis.confidenceScore, detectedKeywords: aiAnalysis.detectedKeywords || [], duplicateDetected: Boolean(aiAnalysis.duplicateDetected && confirmDifferentIssue), duplicateOf: aiAnalysis.duplicateDetected && confirmDifferentIssue ? aiAnalysis.duplicateComplaint?._id : null, suggestedPriority: aiAnalysis.suggestedPriority, suggestedDepartment: determinedDepartment, autoRouted: Boolean(assignedOfficerId) },
       timeline: [{ status: 'Pending', note: `Complaint registered. Configured ${determinedPriority} priority SLA deadline: ${sla.slaDeadline.toISOString()}.`, updatedBy: req.user._id }, ...(assignedOfficerId ? [{ status: 'Assigned', note: `${assignment.explanation} Assigned to ${assignment.officer.name} (${determinedDepartment}).`, updatedBy: req.user._id }] : [])],
     });
     await Notification.create({ user: req.user._id, title: 'Complaint Registered', message: `Your complaint "${complaint.title}" has been registered (ID: #${complaint._id.toString().slice(-6).toUpperCase()}).`, complaintId: complaint._id, type: 'new_complaint' });

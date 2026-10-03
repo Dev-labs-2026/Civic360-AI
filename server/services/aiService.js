@@ -172,9 +172,9 @@ const calculateDistanceInMeters = (lat1, lon1, lat2, lon2) => {
 };
 
 /**
- * Detect if a similar complaint already exists in close proximity (< 150m)
+ * Detect the closest active, recent complaint in the same category and close proximity.
  * @param {Object} param0 - { category, latitude, longitude, ComplaintModel, excludeId }
- * @returns {Promise<Object>} - { duplicateDetected, duplicateComplaint, distanceMeters }
+ * @returns {Promise<Object>} - explainable duplicate match and rule details
  */
 export const detectDuplicateComplaint = async ({
   category,
@@ -197,9 +197,8 @@ export const detectDuplicateComplaint = async ({
       createdAt: { $gte: thirtyDaysAgo },
     };
 
-    if (category && category !== 'Other') {
-      query.category = category;
-    }
+    // Category is part of the match rule, including the explicit Other category.
+    if (category) query.category = category;
 
     if (excludeId) {
       query._id = { $ne: excludeId };
@@ -211,6 +210,7 @@ export const detectDuplicateComplaint = async ({
 
     const PROXIMITY_THRESHOLD_METERS = 150; // 150 meters threshold
 
+    const matches = [];
     for (const candidate of nearbyCandidates) {
       if (candidate.latitude !== null && candidate.latitude !== undefined
         && candidate.longitude !== null && candidate.longitude !== undefined) {
@@ -222,13 +222,26 @@ export const detectDuplicateComplaint = async ({
         );
 
         if (dist <= PROXIMITY_THRESHOLD_METERS) {
-          return {
-            duplicateDetected: true,
-            duplicateComplaint: candidate,
-            distanceMeters: Math.round(dist),
-          };
+          matches.push({ candidate, distanceMeters: Math.round(dist) });
         }
       }
+    }
+
+    matches.sort((left, right) => left.distanceMeters - right.distanceMeters);
+    const match = matches[0];
+    if (match) {
+      const ageDays = Math.max(0, (Date.now() - new Date(match.candidate.createdAt).getTime()) / (24 * 60 * 60 * 1000));
+      const matchLevel = match.distanceMeters <= 50 && ageDays <= 7 ? 'High Match'
+        : match.distanceMeters <= 100 && ageDays <= 14 ? 'Medium Match' : 'Possible Match';
+      const similarityReason = `Same category (${match.candidate.category}), ${match.distanceMeters}m away, reported ${Math.floor(ageDays)} day(s) ago.`;
+      return {
+        duplicateDetected: true,
+        duplicateComplaint: match.candidate,
+        distanceMeters: match.distanceMeters,
+        matchLevel,
+        similarityReason,
+        recencyDays: Math.floor(ageDays),
+      };
     }
 
     return { duplicateDetected: false, duplicateComplaint: null, distanceMeters: null };
@@ -268,7 +281,7 @@ export const analyzeComplaint = async ({
   const department = recommendDepartment(finalCategory);
 
   // 4. Duplicate Check
-  let duplicateInfo = { duplicateDetected: false, duplicateComplaint: null };
+  let duplicateInfo = { duplicateDetected: false, duplicateComplaint: null, distanceMeters: null, matchLevel: null, similarityReason: null, recencyDays: null };
   if (latitude !== null && latitude !== undefined && longitude !== null && longitude !== undefined && ComplaintModel) {
     duplicateInfo = await detectDuplicateComplaint({
       category: finalCategory,
@@ -278,13 +291,29 @@ export const analyzeComplaint = async ({
     });
   }
 
+  const duplicateComplaint = duplicateInfo.duplicateComplaint;
+  const publicDuplicate = duplicateComplaint ? {
+    _id: duplicateComplaint._id,
+    reference: `CIV-${String(duplicateComplaint._id).slice(-6).toUpperCase()}`,
+    category: duplicateComplaint.category,
+    status: duplicateComplaint.status,
+    title: duplicateComplaint.title,
+    createdAt: duplicateComplaint.createdAt,
+    distanceMeters: duplicateInfo.distanceMeters,
+  } : null;
+
   return {
     suggestedCategory: classification.category,
     confidenceScore: classification.confidence,
     detectedKeywords: classification.detectedKeywords,
     suggestedPriority: priority,
     recommendedDepartment: department,
-    ...duplicateInfo,
+    duplicateDetected: duplicateInfo.duplicateDetected,
+    duplicateComplaint: publicDuplicate,
+    distanceMeters: duplicateInfo.distanceMeters,
+    matchLevel: duplicateInfo.matchLevel,
+    similarityReason: duplicateInfo.similarityReason,
+    recencyDays: duplicateInfo.recencyDays,
   };
 };
 

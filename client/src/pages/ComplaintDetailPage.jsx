@@ -278,6 +278,12 @@ const ComplaintDetailPage = () => {
           <p className="text-xs text-slate-600">Expected deadline: {formatDate(complaint.slaDeadline)}</p>
         </section>
       )}
+      {isOfficerOrAdmin && complaint.aiMetadata?.duplicateOf?._id && (
+        <section className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+          <div><p className="text-xs font-bold text-amber-900">Possible duplicate relationship</p><p className="text-xs text-amber-800 mt-1">Possible duplicate of CIV-{String(complaint.aiMetadata.duplicateOf._id).slice(-6).toUpperCase()}</p></div>
+          <Link to={`/complaints/${complaint.aiMetadata.duplicateOf._id}`} className="px-3 py-2 rounded-lg bg-amber-700 text-white text-xs font-bold">Inspect related complaint</Link>
+        </section>
+      )}
       {user?.role !== 'citizen' && complaint.escalationHistory?.length > 0 && (
         <section className="bg-white border border-rose-200 rounded-2xl p-5"><h3 className="font-bold text-sm text-rose-800 mb-3">Escalation history</h3><div className="space-y-3">{complaint.escalationHistory.map((item, index) => <div key={`${item.timestamp}-${index}`} className="text-xs text-slate-600 border-l-2 border-rose-300 pl-3"><p className="font-semibold">Level {item.escalationLevel}: {item.previousStatus} → {item.newStatus} · {formatDate(item.timestamp)}</p><p>{item.reason}</p><p>Referred to: {item.newAssignee?.name || complaint.escalatedTo?.name || 'Administrator queue'}</p></div>)}</div></section>
       )}
