@@ -1,8 +1,8 @@
 # Civic360 AI 🏛️
-### AI-Powered Civic Issue Reporting & Resolution Platform for India
+### Smarter Civic Issue Resolution for West Bengal
 > **Report. Route. Resolve.**
 
-Civic360 AI is a modern full-stack civic-tech web platform designed to streamline municipal complaint management across India. It empowers citizens to report civic grievances—such as potholes, garbage accumulation, broken streetlights, water pipeline bursts, drainage blockages, and road damage—with GPS geolocation, photo evidence, and real-time status tracking. 
+Civic360 AI is a modern full-stack civic-tech web platform designed to support civic issue reporting across West Bengal, India. It empowers citizens to report civic grievances—such as potholes, garbage accumulation, broken streetlights, water pipeline bursts, drainage blockages, and road damage—with location details, photo evidence, and complaint status tracking.
 
 For municipal administrations and field officers, Civic360 AI provides an intelligent workspace with automated smart routing, urgency classification, proximity-based duplicate detection, interactive Leaflet city mapping, Before/After resolution verification, and executive analytics.
 
@@ -28,7 +28,7 @@ For municipal administrations and field officers, Civic360 AI provides an intell
 - **Citizen Profile:** View total reports, pending issues, and customize default ward.
 
 ### 👷 Field Officer Workspace
-- **Departmental Filtering:** Switch between personal assignments and departmental pool (PWD, Sanitation, Water Board, Electrical, Drainage).
+- **Departmental Filtering:** Switch between personal assignments and departmental pool (PWD / Roads, Sanitation, Water Department, Electrical, Drainage Department).
 - **Urgency Telemetry:** Critical and High priority badges with alert indicators.
 - **Interactive Map View:** City map with color-coded markers (Red = Critical, Orange = High, Amber = Medium, Green = Resolved).
 - **Resolution Desk:**
@@ -59,11 +59,11 @@ Civic360 AI features a clean, modular AI interface ready for plug-and-play integ
    - Geo-spatial Haversine proximity engine checking for active tickets within **150 meters** logged in the past 30 days to prevent municipal work redundancy.
 4. **`recommendDepartment(category)`**
    - Smart routing matrix mapping issues directly to relevant civic bodies:
-     - **Pothole / Road Damage** → *Public Works Department (PWD)*
-     - **Garbage / Litter** → *Sanitation & Solid Waste Management*
-     - **Broken Streetlight / Exposed Wire** → *Electrical Department*
-     - **Water Leakage / Pipe Burst** → *Water Supply & Sewerage Board*
-     - **Drainage / Silt Block** → *Drainage & Flood Control*
+     - **Pothole / Road Damage** → *PWD / Roads*
+     - **Garbage / Litter** → *Sanitation*
+     - **Broken Streetlight / Exposed Wire** → *Electrical*
+     - **Water Leakage / Pipe Burst** → *Water Department*
+     - **Drainage / Silt Block** → *Drainage Department*
 
 ---
 
@@ -93,21 +93,21 @@ civic360-ai/
 ├── client/
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── Navbar.jsx               # Brand header, notifications & quick demo switcher
+│   │   │   ├── Navbar.jsx               # Brand header, notifications & demo indicator
 │   │   │   ├── Footer.jsx               # Helplines, civic links & municipal directory
 │   │   │   ├── ComplaintCard.jsx        # Responsive issue card
 │   │   │   ├── ComplaintMap.jsx         # Interactive Leaflet map with filtered markers
 │   │   │   ├── MapPicker.jsx            # Geolocation coordinate picker
 │   │   │   ├── ImageCompareModal.jsx    # Interactive Before/After slider & side-by-side view
 │   │   │   ├── NotificationDrawer.jsx   # Slide-over alert feed
-│   │   │   ├── DemoSwitcherModal.jsx    # 1-click persona testing
+│   │   │   ├── DemoSwitcherModal.jsx    # Non-production demo role selector
 │   │   │   ├── StatusBadge.jsx          # Color-coded status pills
 │   │   │   ├── PriorityBadge.jsx        # Urgency badges
 │   │   │   ├── LoadingSpinner.jsx       # State spinners
 │   │   │   └── EmptyState.jsx           # Zero-data state displays
 │   │   ├── pages/
 │   │   │   ├── LandingPage.jsx          # Public showcase & hero section
-│   │   │   ├── LoginPage.jsx            # Authentication & 1-click persona fills
+│   │   │   ├── LoginPage.jsx            # Sign-in and controlled demo access
 │   │   │   ├── RegisterPage.jsx         # Citizen & Officer registration
 │   │   │   ├── ReportIssuePage.jsx      # Multi-step complaint submission with AI assistant
 │   │   │   ├── CitizenDashboard.jsx     # Citizen KPI counters and tickets
@@ -126,11 +126,11 @@ civic360-ai/
 │   │   │   └── NotificationContext.jsx  # Unread badge & alert syncing
 │   │   ├── services/
 │   │   │   ├── api.js                   # Universal fetch wrapper with auth header
-│   │   │   ├── authService.js           # Login, register, profile
+│   │   │   ├── authService.js           # Login, demo session, register, profile
 │   │   │   ├── complaintService.js      # CRUD, analytics & AI analysis
 │   │   │   └── notificationService.js   # Notification queries
 │   │   ├── utils/
-│   │   │   ├── constants.js             # Categories, wards, departments & demo credentials
+│   │   │   ├── constants.js             # Categories, wards, departments & demo role labels
 │   │   │   └── formatters.js            # Date & badge helpers
 │   │   ├── App.jsx                      # Protected routing
 │   │   ├── main.jsx                     # Client bootstrap
@@ -164,7 +164,7 @@ civic360-ai/
 │   ├── services/
 │   │   └── aiService.js                 # NLP classification, priority & duplicate engine
 │   ├── utils/
-│   │   └── seedData.js                  # Realistic Indian civic mock dataset
+│   │   └── seedData.js                  # West Bengal DEMO/SAMPLE civic dataset
 │   ├── uploads/                         # Statically served issue photos
 │   ├── server.js                        # Express server entry point
 │   ├── .env.example
@@ -187,7 +187,7 @@ civic360-ai/
 ```bash
 cd server
 npm install
-npm run seed     # (Optional: Seeds 8 realistic Indian complaints & demo accounts)
+npm run seed     # Explicitly upserts labeled demo fixtures without clearing existing records
 npm start        # Starts server on http://localhost:5000
 ```
 
@@ -202,26 +202,25 @@ Open your browser and navigate to `http://localhost:5173`.
 
 ---
 
-## 🔑 Demo Accounts (Instant 1-Click Login)
+## Demo Environment
 
-The platform features a **"Demo Switcher"** button in the top navigation bar and on the login page for rapid evaluation:
+In local development, choose **Demo Environment** on the sign-in page and select a role. Demo access uses the backend authentication flow and is enabled only when the backend runs with `NODE_ENV=development`. No demo passwords are displayed or bundled in the frontend.
 
-| Role | Name | Email | Password | Jurisdiction / Focus |
-|---|---|---|---|---|
-| **Citizen** | Aarav Sharma | `citizen@civic360.in` | `citizen123` | Ward 12 - Indiranagar |
-| **Field Officer** | Rajesh Kumar | `officer.roads@civic360.in` | `officer123` | Roads / PWD Department |
-| **Field Officer** | Sunita Patel | `officer.sanitation@civic360.in` | `officer123` | Sanitation & Solid Waste |
-| **Administrator** | Dr. Priya Deshmukh | `admin@civic360.in` | `admin123` | City Commissioner / Central |
+| Role | Name | Jurisdiction / Focus |
+|---|---|---|
+| **Citizen** | Soumodeep Maiti | West Bengal, India |
+| **PWD Officer** | Souvik Baidya | PWD / Roads |
+| **Sanitation Officer** | Priya Sen | Sanitation |
+| **Administrator** | Soumodeep Maiti | West Bengal, India |
 
 ---
-
 ## 🌐 Environment Variables
 
 ### Backend (`server/.env`)
 ```env
 PORT=5000
 MONGODB_URI=mongodb://127.0.0.1:27017/civic360
-JWT_SECRET=civic360_super_secret_jwt_key_2026_india
+JWT_SECRET=replace-with-a-long-random-value
 NODE_ENV=development
 ```
 
@@ -236,7 +235,8 @@ VITE_API_URL=/api
 
 ### Authentication
 - `POST /api/auth/register` - Create a citizen or officer account
-- `POST /api/auth/login` - Authenticate and receive JWT token
+- POST /api/auth/login - Authenticate and receive JWT token
+- POST /api/auth/demo - Start a controlled non-production demo session
 - `GET /api/auth/me` - Fetch authenticated user profile & counters
 - `PUT /api/auth/profile` - Update phone number and preferred ward
 
@@ -268,4 +268,4 @@ VITE_API_URL=/api
 - **Predictive Infrastructure Maintenance:** Time-series analysis predicting monsoon drainage overflows based on historical rainfall and ticket frequency.
 
 ---
-Built with pride for Indian civic excellence 🇮🇳
+Civic360 AI · West Bengal, India

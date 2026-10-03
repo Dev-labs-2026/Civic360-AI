@@ -56,13 +56,13 @@ export const connectDB = async () => {
   } catch (err) {
     // If it is Atlas or explicit remote URI, DO NOT use in-memory fallback
     if (isAtlas || !isLocal) {
-      console.error(` [Database Error] Failed to connect to MongoDB Atlas: ${err.message}`);
+      console.error(' [Database Error] Failed to connect to the configured remote MongoDB instance.');
       throw err;
     }
 
     // Optional local dev fallback ONLY if local mongo daemon is offline and memory fallback is allowed
     if (process.env.ALLOW_MEMORY_FALLBACK === 'true') {
-      console.warn(`! Local MongoDB connection failed: ${err.message}`);
+      console.warn('! Local MongoDB connection failed; attempting the configured development fallback.');
       console.log(' Attempting fallback to MongoMemoryServer (development mode)...');
 
       try {
@@ -78,13 +78,13 @@ export const connectDB = async () => {
         console.log(` [Database] Connected to ${dbType} at ${dbHost}`);
         return conn;
       } catch (fallbackError) {
-        console.error(' Failed to initialize in-memory fallback:', fallbackError.message);
+        console.error(' Failed to initialize in-memory fallback.');
         throw fallbackError;
       }
     }
 
     // Default error handling
-    console.error(` [Database Error] MongoDB connection failed: ${err.message}`);
+    console.error(' [Database Error] MongoDB connection failed.');
     throw err;
   }
 };

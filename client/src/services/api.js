@@ -1,4 +1,22 @@
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const rawBase = import.meta.env.VITE_API_URL || '/api';
+export const BASE_URL = rawBase.replace(/\/+$/, '');
+
+/**
+ * Universal helper to resolve image URLs (handles local uploads, external URLs, and base64)
+ */
+export const getImageUrl = (imagePath) => {
+  if (!imagePath) return '';
+  if (
+    imagePath.startsWith('http://') ||
+    imagePath.startsWith('https://') ||
+    imagePath.startsWith('data:')
+  ) {
+    return imagePath;
+  }
+  const backendOrigin = BASE_URL.replace(/\/api\/?$/, '');
+  const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+  return `${backendOrigin}${cleanPath}`;
+};
 
 /**
  * Universal API fetch wrapper with token injection and error handling
@@ -17,7 +35,8 @@ export const apiRequest = async (endpoint, options = {}) => {
     delete headers['Content-Type'];
   }
 
-  const url = `${BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = `${BASE_URL}${cleanEndpoint}`;
 
   try {
     const response = await fetch(url, {
@@ -43,6 +62,13 @@ export const apiRequest = async (endpoint, options = {}) => {
 
     return data;
   } catch (error) {
+    // Check if network error (e.g. backend offline)
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      const netError = new Error('Backend server is currently unavailable. Please verify the server is running on port 5000.');
+      netError.isNetworkError = true;
+      console.error(`Network Error on [${options.method || 'GET'}] ${endpoint}:`, netError);
+      throw netError;
+    }
     console.error(`API Error on [${options.method || 'GET'}] ${endpoint}:`, error);
     throw error;
   }

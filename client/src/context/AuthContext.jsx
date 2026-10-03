@@ -49,6 +49,17 @@ export const AuthProvider = ({ children }) => {
     return res;
   };
 
+  const loginDemo = async (persona) => {
+    const res = await authService.loginDemo(persona);
+    if (res.success) {
+      setUser(res.user);
+      setToken(res.token);
+      localStorage.setItem('civic360_token', res.token);
+      localStorage.setItem('civic360_user', JSON.stringify(res.user));
+    }
+    return res;
+  };
+
   const register = async (userData) => {
     const res = await authService.register(userData);
     if (res.success) {
@@ -80,6 +91,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated: !!user && !!token,
         loading,
         login,
+        loginDemo,
         register,
         logout,
         updateUserState,

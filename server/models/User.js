@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { DEPARTMENT_NAMES, normalizeDepartment } from '../utils/departments.js';
 
 const userSchema = new mongoose.Schema(
   {
@@ -31,6 +32,24 @@ const userSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    state: {
+      type: String,
+      default: 'West Bengal',
+      trim: true,
+    },
+    country: {
+      type: String,
+      default: 'India',
+      trim: true,
+    },
+    isDemo: {
+      type: Boolean,
+      default: false,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
     role: {
       type: String,
       enum: ['citizen', 'officer', 'admin'],
@@ -38,25 +57,31 @@ const userSchema = new mongoose.Schema(
     },
     department: {
       type: String,
-      default: 'General',
-      enum: [
-        'Roads/PWD',
-        'Sanitation',
-        'Electrical',
-        'Water Supply',
-        'Drainage & Sewage',
-        'General',
-      ],
+      default: 'General Civic Department',
+      enum: DEPARTMENT_NAMES,
     },
     ward: {
       type: String,
-      default: 'Ward 12 - Indiranagar',
+      default: 'Kolkata • Ward 12',
     },
   },
   {
     timestamps: true,
   }
 );
+
+userSchema.index({ role: 1, department: 1, isActive: 1, ward: 1 });
+
+// Normalize historical department labels when existing MongoDB records are loaded.
+userSchema.post('init', function (user) {
+  const department = normalizeDepartment(user.department);
+  if (department !== user.department) user.department = department;
+});
+
+userSchema.pre('validate', function () {
+  const department = normalizeDepartment(this.department);
+  if (department !== this.department) this.department = department;
+});
 
 // Encrypt password before saving
 userSchema.pre('save', async function (next) {

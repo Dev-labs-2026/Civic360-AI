@@ -1,12 +1,14 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import Complaint from '../models/Complaint.js';
+import getJwtSecret from '../utils/jwtSecret.js';
+import { DEMO_PERSONAS, getDemoPersonaForUser } from '../utils/demoAccounts.js';
 
 // Helper to generate JWT token
 const generateToken = (id, role) => {
   return jwt.sign(
     { id, role },
-    process.env.JWT_SECRET || 'civic360_super_secret_jwt_key_2026_india',
+    getJwtSecret(),
     { expiresIn: '30d' }
   );
 };
@@ -18,7 +20,18 @@ const generateToken = (id, role) => {
  */
 export const register = async (req, res) => {
   try {
-    const { name, email, password, phone, role = 'citizen', department, ward } = req.body;
+    const { name, email, password, phone, department, ward } = req.body;
+
+    // Public registration can never create privileged accounts. Explicitly
+    // reject privileged role requests instead of silently honoring them.
+    if (req.body.role !== undefined && req.body.role !== 'citizen') {
+      return res.status(403).json({ success: false, message: 'Public registration is limited to citizen accounts.' });
+    }
+
+    if (typeof name !== 'string' || typeof email !== 'string' || typeof password !== 'string'
+      || (phone !== undefined && typeof phone !== 'string') || (ward !== undefined && typeof ward !== 'string')) {
+      return res.status(400).json({ success: false, message: 'Invalid registration details.' });
+    }
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -41,9 +54,9 @@ export const register = async (req, res) => {
       email: email.toLowerCase().trim(),
       password,
       phone: phone || '',
-      role: ['citizen', 'officer', 'admin'].includes(role) ? role : 'citizen',
-      department: department || 'General',
-      ward: ward || 'Ward 12 - Indiranagar',
+      role: 'citizen',
+      department: 'General Civic Department',
+      ward: ward || 'Kolkata • Ward 12',
     });
 
     const token = generateToken(user._id, user.role);
@@ -60,6 +73,9 @@ export const register = async (req, res) => {
         role: user.role,
         department: user.department,
         ward: user.ward,
+        state: user.state,
+        country: user.country,
+        isDemo: user.isDemo,
         createdAt: user.createdAt,
       },
     });
@@ -67,7 +83,7 @@ export const register = async (req, res) => {
     console.error('Register error:', error);
     return res.status(500).json({
       success: false,
-      message: error.message || 'Server error during registration',
+      message: 'Unable to register account. Check the submitted details and try again.',
     });
   }
 };
@@ -81,7 +97,7 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !password) {
       return res.status(400).json({
         success: false,
         message: 'Please provide both email and password',
@@ -118,6 +134,9 @@ export const login = async (req, res) => {
         role: user.role,
         department: user.department,
         ward: user.ward,
+        state: user.state,
+        country: user.country,
+        isDemo: user.isDemo,
         createdAt: user.createdAt,
       },
     });
@@ -126,6 +145,56 @@ export const login = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || 'Server error during login',
+    });
+  }
+};
+
+/**
+ * @desc    Start a controlled demo session for a seeded demo persona
+ * @route   POST /api/auth/demo
+ * @access  Public in local development only
+ */
+export const demoLogin = async (req, res) => {
+  if (process.env.NODE_ENV !== 'development') {
+    return res.status(404).json({ success: false, message: 'Demo access is unavailable.' });
+  }
+
+  try {
+    const personaId = req.body?.persona;
+    if (typeof personaId !== 'string' || !Object.hasOwn(DEMO_PERSONAS, personaId)) {
+      return res.status(400).json({ success: false, message: 'Select a valid demo role.' });
+    }
+    const persona = DEMO_PERSONAS[personaId];
+
+    const user = await User.findOne({ email: persona.email, role: persona.role });
+    if (!user || getDemoPersonaForUser(user)?.id !== persona.id) {
+      return res.status(404).json({ success: false, message: 'This demo role is not available.' });
+    }
+
+    const token = generateToken(user._id, user.role);
+    return res.status(200).json({
+      success: true,
+      message: 'Demo session started',
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        department: user.department,
+        ward: user.ward,
+        state: user.state,
+        country: user.country,
+        isDemo: true,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error('Demo login error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Demo sign-in is temporarily unavailable.',
     });
   }
 };
@@ -155,9 +224,12 @@ export const getMe = async (req, res) => {
       userStats = { assigned, resolved };
     }
 
+    const userPayload = user.toObject();
+    userPayload.isDemo = Boolean(user.isDemo || getDemoPersonaForUser(user));
+
     return res.status(200).json({
       success: true,
-      user,
+      user: userPayload,
       stats: userStats,
     });
   } catch (error) {
@@ -196,6 +268,9 @@ export const updateProfile = async (req, res) => {
         role: user.role,
         department: user.department,
         ward: user.ward,
+        state: user.state,
+        country: user.country,
+        isDemo: user.isDemo,
       },
     });
   } catch (error) {

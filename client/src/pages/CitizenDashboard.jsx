@@ -21,34 +21,45 @@ const CitizenDashboard = () => {
   const { user } = useAuth();
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [totalCount, setTotalCount] = useState(0);
   const [activeTab, setActiveTab] = useState('All');
 
-  useEffect(() => {
-    const fetchCitizenData = async () => {
-      try {
-        setLoading(true);
-        const res = await complaintService.getComplaints({ my: 'true' });
-        if (res.success && res.complaints) {
-          setComplaints(res.complaints);
+  const fetchCitizenData = async () => {
+    try {
+      setLoading(true);
+      setErrorMessage('');
+      const res = await complaintService.getComplaints({ my: 'true', limit: 100, page: 1 });
+      if (res.success && res.complaints) {
+        const allComplaints = [...res.complaints];
+        for (let page = 2; page <= (res.totalPages || 1); page += 1) {
+          const pageRes = await complaintService.getComplaints({ my: 'true', limit: 100, page });
+          if (pageRes.success) allComplaints.push(...pageRes.complaints);
         }
-      } catch (err) {
-        console.error('Failed to load citizen complaints:', err);
-      } finally {
-        setLoading(false);
+        setComplaints(allComplaints);
+        setTotalCount(res.total ?? allComplaints.length);
       }
-    };
-    fetchCitizenData();
-  }, []);
+    } catch (err) {
+      console.error('Failed to load citizen complaints:', err);
+      setErrorMessage('Unable to load your dashboard. Try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => { fetchCitizenData(); }, []);
 
   // Compute counts
-  const total = complaints.length;
-  const pending = complaints.filter((c) => c.status === 'Pending' || c.status === 'Assigned').length;
-  const inProgress = complaints.filter((c) => c.status === 'In Progress').length;
+  const total = totalCount;
+  const active = complaints.filter((c) => ['Pending', 'Assigned', 'In Progress'].includes(c.status)).length;
   const resolved = complaints.filter((c) => c.status === 'Resolved').length;
+  const overdue = complaints.filter((c) => c.slaStatus === 'Overdue').length;
+  const escalated = complaints.filter((c) => c.slaStatus === 'Escalated').length;
 
   const filteredComplaints = complaints.filter((c) => {
     if (activeTab === 'All') return true;
-    if (activeTab === 'Pending') return c.status === 'Pending' || c.status === 'Assigned';
+    if (activeTab === 'Active') return ['Pending', 'Assigned', 'In Progress'].includes(c.status);
+    if (activeTab === 'Overdue') return c.slaStatus === 'Overdue';
+    if (activeTab === 'Escalated') return c.slaStatus === 'Escalated';
     if (activeTab === 'In Progress') return c.status === 'In Progress';
     if (activeTab === 'Resolved') return c.status === 'Resolved';
     return true;
@@ -64,7 +75,7 @@ const CitizenDashboard = () => {
               Welcome back, {user?.name || 'Citizen'}!
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
-              {user?.ward || 'Ward 12 - Indiranagar'}
+              {user?.ward || 'Kolkata • Ward 12'}
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
@@ -82,7 +93,7 @@ const CitizenDashboard = () => {
       </div>
 
       {/* Summary KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {/* Total Reports */}
         <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-between">
           <div>
@@ -95,28 +106,38 @@ const CitizenDashboard = () => {
           </div>
         </div>
 
-        {/* Pending */}
+        {/* Active */}
         <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-amber-600">Pending</p>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{pending}</h3>
-            <p className="text-[11px] text-slate-500 mt-0.5">Awaiting dispatch</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-amber-600">Active</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{active}</h3>
+            <p className="text-[11px] text-slate-500 mt-0.5">Awaiting or being handled</p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
             <Clock className="w-6 h-6" />
           </div>
         </div>
 
-        {/* In Progress */}
+        {/* Overdue */}
         <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">In Progress</p>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{inProgress}</h3>
-            <p className="text-[11px] text-slate-500 mt-0.5">Under field repair</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-rose-600">Overdue</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{overdue}</h3>
+            <p className="text-[11px] text-slate-500 mt-0.5">Past expected deadline</p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-            <Wrench className="w-6 h-6" />
+            <Clock className="w-6 h-6" />
           </div>
+        </div>
+
+        {/* Resolved */}
+        <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-purple-700">Escalated</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{escalated}</h3>
+            <p className="text-[11px] text-slate-500 mt-0.5">Sent for further review</p>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center"><TrendingUp className="w-6 h-6" /></div>
         </div>
 
         {/* Resolved */}
@@ -144,7 +165,7 @@ const CitizenDashboard = () => {
 
           {/* Filter Tabs */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-            {['All', 'Pending', 'In Progress', 'Resolved'].map((tab) => (
+            {['All', 'Active', 'Overdue', 'Escalated', 'Resolved'].map((tab) => (
               <button
                 key={tab}
                 type="button"
@@ -161,12 +182,14 @@ const CitizenDashboard = () => {
           </div>
         </div>
 
-        {loading ? (
+        {errorMessage ? (
+          <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-800 flex flex-wrap items-center justify-between gap-3"><span>{errorMessage}</span><button onClick={fetchCitizenData} className="rounded-lg bg-rose-700 px-4 py-2 text-white font-semibold">Retry</button></div>
+        ) : loading ? (
           <LoadingSpinner message="Fetching your complaints..." />
         ) : filteredComplaints.length === 0 ? (
           <EmptyState
-            title="No complaints in this view"
-            description="You haven't reported any issues matching this status filter."
+            title={activeTab === 'Overdue' ? 'No overdue complaints' : activeTab === 'Active' ? 'No active complaints' : 'No complaints in this view'}
+            description="You have no complaints matching this view. Your reports and updates will appear here."
             actionText="Report an Issue Now"
             actionLink="/report"
           />

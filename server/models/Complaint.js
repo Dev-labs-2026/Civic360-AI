@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { DEPARTMENT_NAMES, normalizeDepartment } from '../utils/departments.js';
 
 const complaintSchema = new mongoose.Schema(
   {
@@ -34,10 +35,14 @@ const complaintSchema = new mongoose.Schema(
     latitude: {
       type: Number,
       required: [true, 'Latitude is required'],
+      min: [-90, 'Latitude must be between -90 and 90'],
+      max: [90, 'Latitude must be between -90 and 90'],
     },
     longitude: {
       type: Number,
       required: [true, 'Longitude is required'],
+      min: [-180, 'Longitude must be between -180 and 180'],
+      max: [180, 'Longitude must be between -180 and 180'],
     },
     address: {
       type: String,
@@ -45,7 +50,11 @@ const complaintSchema = new mongoose.Schema(
     },
     ward: {
       type: String,
-      default: 'Ward 12 - Indiranagar',
+      default: 'Kolkata • Ward 12',
+    },
+    isDemo: {
+      type: Boolean,
+      default: false,
     },
     priority: {
       type: String,
@@ -69,16 +78,31 @@ const complaintSchema = new mongoose.Schema(
     },
     department: {
       type: String,
-      enum: [
-        'Roads/PWD',
-        'Sanitation',
-        'Electrical',
-        'Water Supply',
-        'Drainage & Sewage',
-        'General',
-      ],
-      default: 'General',
+      enum: DEPARTMENT_NAMES,
+      default: 'General Civic Department',
     },
+    routingExplanation: {
+      type: String,
+      default: '',
+      maxlength: 240,
+    },
+    // SLA duration is in hours; dates are stored as UTC instants by MongoDB.
+    slaDuration: { type: Number, min: 0 },
+    slaDeadline: { type: Date, index: true },
+    slaDueSoonNotifiedAt: { type: Date, default: null },
+    escalationLevel: { type: Number, min: 0, default: 0 },
+    escalatedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    escalationHistory: [
+      {
+        timestamp: { type: Date, default: Date.now },
+        previousStatus: { type: String, required: true },
+        newStatus: { type: String, required: true },
+        previousAssignee: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+        newAssignee: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+        escalationLevel: { type: Number, required: true },
+        reason: { type: String, required: true },
+      },
+    ],
     resolutionNote: {
       type: String,
       default: '',
@@ -97,7 +121,7 @@ const complaintSchema = new mongoose.Schema(
       duplicateDetected: { type: Boolean, default: false },
       duplicateOf: { type: mongoose.Schema.Types.ObjectId, ref: 'Complaint', default: null },
       suggestedPriority: { type: String, default: 'Medium' },
-      suggestedDepartment: { type: String, default: 'General' },
+      suggestedDepartment: { type: String, default: 'General Civic Department' },
       autoRouted: { type: Boolean, default: true },
     },
     timeline: [
@@ -114,9 +138,21 @@ const complaintSchema = new mongoose.Schema(
   }
 );
 
+// Normalize historical department labels when existing MongoDB records are loaded.
+complaintSchema.post('init', function (complaint) {
+  const department = normalizeDepartment(complaint.department);
+  if (department !== complaint.department) complaint.department = department;
+});
+
+complaintSchema.pre('validate', function () {
+  const department = normalizeDepartment(this.department);
+  if (department !== this.department) this.department = department;
+});
+
 // Index for geo/ward queries and recent sorting
 complaintSchema.index({ latitude: 1, longitude: 1 });
 complaintSchema.index({ status: 1, category: 1, priority: 1 });
+complaintSchema.index({ assignedOfficer: 1, status: 1 });
 complaintSchema.index({ createdAt: -1 });
 
 export default mongoose.model('Complaint', complaintSchema);

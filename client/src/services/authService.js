@@ -8,6 +8,13 @@ export const authService = {
     });
   },
 
+  loginDemo: async (persona) => {
+    return await apiRequest('/auth/demo', {
+      method: 'POST',
+      body: JSON.stringify({ persona }),
+    });
+  },
+
   register: async (userData) => {
     return await apiRequest('/auth/register', {
       method: 'POST',

@@ -51,11 +51,11 @@ const Footer = () => {
               Integrated Departments
             </h4>
             <ul className="space-y-2 text-xs text-slate-400">
-              <li>Public Works & Roads (PWD)</li>
-              <li>Sanitation & Solid Waste</li>
-              <li>Electricity & Street Lighting (BESCOM/State)</li>
-              <li>Water Supply & Sewerage Board (BWSSB)</li>
-              <li>Storm Water & Drainage Department</li>
+              <li>PWD / Roads</li>
+              <li>Sanitation</li>
+              <li>Electrical</li>
+              <li>Water Department</li>
+              <li>Drainage Department</li>
             </ul>
           </div>
 

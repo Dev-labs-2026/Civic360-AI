@@ -9,7 +9,7 @@ const ProfilePage = () => {
 
   const [name, setName] = useState(user?.name || '');
   const [phone, setPhone] = useState(user?.phone || '');
-  const [ward, setWard] = useState(user?.ward || 'Ward 12 - Indiranagar');
+  const [ward, setWard] = useState(user?.ward || 'Kolkata • Ward 12');
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [stats, setStats] = useState(null);
@@ -21,7 +21,7 @@ const ProfilePage = () => {
         if (res.success) {
           setName(res.user.name);
           setPhone(res.user.phone || '');
-          setWard(res.user.ward || 'Ward 12 - Indiranagar');
+          setWard(res.user.ward || 'Kolkata • Ward 12');
           setStats(res.stats);
         }
       } catch (err) {
